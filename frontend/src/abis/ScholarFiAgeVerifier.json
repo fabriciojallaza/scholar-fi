@@ -1,1 +1,438 @@
-[{"inputs":[{"internalType":"address","name":"identityVerificationHubV2Address","type":"address"},{"internalType":"string","name":"scopeSeed","type":"string"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"AlreadyVerified","type":"error"},{"inputs":[],"name":"ChildAlreadyRegistered","type":"error"},{"inputs":[],"name":"ChildNotRegistered","type":"error"},{"inputs":[],"name":"InvalidDataFormat","type":"error"},{"inputs":[],"name":"NotOwner","type":"error"},{"inputs":[],"name":"NotParent","type":"error"},{"inputs":[],"name":"UnauthorizedCaller","type":"error"},{"inputs":[],"name":"ZeroAddress","type":"error"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"childAddress","type":"address"},{"indexed":true,"internalType":"address","name":"parentAddress","type":"address"},{"indexed":false,"internalType":"uint256","name":"timestamp","type":"uint256"}],"name":"ChildRegistered","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"childAddress","type":"address"},{"indexed":true,"internalType":"address","name":"parentAddress","type":"address"},{"indexed":false,"internalType":"uint256","name":"timestamp","type":"uint256"},{"components":[{"internalType":"bytes32","name":"attestationId","type":"bytes32"},{"internalType":"uint256","name":"userIdentifier","type":"uint256"},{"internalType":"uint256","name":"nullifier","type":"uint256"},{"internalType":"uint256[4]","name":"forbiddenCountriesListPacked","type":"uint256[4]"},{"internalType":"string","name":"issuingState","type":"string"},{"internalType":"string[]","name":"name","type":"string[]"},{"internalType":"string","name":"idNumber","type":"string"},{"internalType":"string","name":"nationality","type":"string"},{"internalType":"string","name":"dateOfBirth","type":"string"},{"internalType":"string","name":"gender","type":"string"},{"internalType":"string","name":"expiryDate","type":"string"},{"internalType":"uint256","name":"olderThan","type":"uint256"},{"internalType":"bool[3]","name":"ofac","type":"bool[3]"}],"indexed":false,"internalType":"struct ISelfVerificationRoot.GenericDiscloseOutputV2","name":"output","type":"tuple"}],"name":"ChildVerified","type":"event"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"children","outputs":[{"internalType":"address","name":"childAddress","type":"address"},{"internalType":"address","name":"parentAddress","type":"address"},{"internalType":"bool","name":"isVerified","type":"bool"},{"internalType":"uint256","name":"verifiedAt","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"childAddress","type":"address"}],"name":"getChildVerification","outputs":[{"components":[{"internalType":"address","name":"childAddress","type":"address"},{"internalType":"address","name":"parentAddress","type":"address"},{"internalType":"bool","name":"isVerified","type":"bool"},{"internalType":"uint256","name":"verifiedAt","type":"uint256"}],"internalType":"struct ScholarFiAgeVerifier.ChildVerification","name":"child","type":"tuple"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"},{"internalType":"bytes32","name":"","type":"bytes32"},{"internalType":"bytes","name":"","type":"bytes"}],"name":"getConfigId","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getVerificationConfig","outputs":[{"internalType":"bytes32","name":"configId","type":"bytes32"},{"internalType":"uint256","name":"minAge","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"childAddress","type":"address"}],"name":"isChildVerified","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes","name":"output","type":"bytes"},{"internalType":"bytes","name":"userData","type":"bytes"}],"name":"onVerificationSuccess","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"childAddress","type":"address"},{"internalType":"address","name":"parentAddress","type":"address"}],"name":"registerChild","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"scope","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"verificationConfig","outputs":[{"internalType":"bool","name":"olderThanEnabled","type":"bool"},{"internalType":"uint256","name":"olderThan","type":"uint256"},{"internalType":"bool","name":"forbiddenCountriesEnabled","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"verificationConfigId","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes","name":"proofPayload","type":"bytes"},{"internalType":"bytes","name":"userContextData","type":"bytes"}],"name":"verifySelfProof","outputs":[],"stateMutability":"nonpayable","type":"function"}]
+[
+  {
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "identityVerificationHubV2Address",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "scopeSeed",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "children",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "childAddress",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "parentAddress",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "isVerified",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "verifiedAt",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getChildVerification",
+    "inputs": [
+      {
+        "name": "childAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "child",
+        "type": "tuple",
+        "internalType": "struct ScholarFiAgeVerifier.ChildVerification",
+        "components": [
+          {
+            "name": "childAddress",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "parentAddress",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "isVerified",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "verifiedAt",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getConfigId",
+    "inputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getVerificationConfig",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "configId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "minAge",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "isChildVerified",
+    "inputs": [
+      {
+        "name": "childAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "onVerificationSuccess",
+    "inputs": [
+      {
+        "name": "output",
+        "type": "bytes",
+        "internalType": "bytes"
+      },
+      {
+        "name": "userData",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "owner",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "registerChild",
+    "inputs": [
+      {
+        "name": "childAddress",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "parentAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "scope",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "verificationConfig",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "olderThanEnabled",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "olderThan",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "forbiddenCountriesEnabled",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "verificationConfigId",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "verifySelfProof",
+    "inputs": [
+      {
+        "name": "proofPayload",
+        "type": "bytes",
+        "internalType": "bytes"
+      },
+      {
+        "name": "userContextData",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "ChildRegistered",
+    "inputs": [
+      {
+        "name": "childAddress",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "parentAddress",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "timestamp",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ChildVerified",
+    "inputs": [
+      {
+        "name": "childAddress",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "parentAddress",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "timestamp",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "output",
+        "type": "tuple",
+        "indexed": false,
+        "internalType": "struct ISelfVerificationRoot.GenericDiscloseOutputV2",
+        "components": [
+          {
+            "name": "attestationId",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "userIdentifier",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "nullifier",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "forbiddenCountriesListPacked",
+            "type": "uint256[4]",
+            "internalType": "uint256[4]"
+          },
+          {
+            "name": "issuingState",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "name",
+            "type": "string[]",
+            "internalType": "string[]"
+          },
+          {
+            "name": "idNumber",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "nationality",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "dateOfBirth",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "gender",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "expiryDate",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "olderThan",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "ofac",
+            "type": "bool[3]",
+            "internalType": "bool[3]"
+          }
+        ]
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "AlreadyVerified",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ChildAlreadyRegistered",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ChildNotRegistered",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidDataFormat",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotOwner",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotParent",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "UnauthorizedCaller",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ZeroAddress",
+    "inputs": []
+  }
+]

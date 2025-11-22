@@ -201,10 +201,10 @@ async function createPrivyWallet(
 
 async function registerOnBase(childAddress: string, checkingWallet: string, vaultWallet: string): Promise<boolean> {
   try {
-    const provider = new ethers.JsonRpcProvider(process.env.VITE_BASE_SEPOLIA_RPC);
-    const signer = new ethers.Wallet(process.env.DEPLOYER_PRIVATE_KEY!, provider);
+    const provider = new ethers.JsonRpcProvider(process.env.BASE_SEPOLIA_RPC || 'https://sepolia.base.org');
+    const signer = new ethers.Wallet(process.env.PRIVATE_KEY!, provider);
 
-    const splitterAddress = process.env.VITE_BASE_SPLITTER_ADDRESS;
+    const splitterAddress = process.env.BASE_SPLITTER_ADDRESS;
     const splitterAbi = [
       'function registerChildWallets(address childAddress, address checkingWallet, address vaultWallet) external'
     ];
@@ -222,10 +222,10 @@ async function registerOnBase(childAddress: string, checkingWallet: string, vaul
 
 async function registerOnCelo(childAddress: string, parentAddress: string): Promise<boolean> {
   try {
-    const provider = new ethers.JsonRpcProvider(process.env.VITE_CELO_SEPOLIA_RPC);
-    const signer = new ethers.Wallet(process.env.DEPLOYER_PRIVATE_KEY!, provider);
+    const provider = new ethers.JsonRpcProvider(process.env.CELO_RPC_URL || 'https://forno.celo-sepolia.celo-testnet.org');
+    const signer = new ethers.Wallet(process.env.PRIVATE_KEY!, provider);
 
-    const verifierAddress = process.env.VITE_CELO_VERIFIER_ADDRESS;
+    const verifierAddress = process.env.CELO_VERIFIER_ADDRESS;
     const verifierAbi = [
       'function registerChild(address childAddress, address parentAddress) external'
     ];
@@ -251,10 +251,10 @@ async function createOasisProfile(
   parentWallet: string
 ): Promise<boolean> {
   try {
-    const provider = new ethers.JsonRpcProvider(process.env.VITE_OASIS_SAPPHIRE_RPC);
-    const signer = new ethers.Wallet(process.env.DEPLOYER_PRIVATE_KEY!, provider);
+    const provider = new ethers.JsonRpcProvider(process.env.SAPPHIRE_TESTNET_RPC || 'https://testnet.sapphire.oasis.io');
+    const signer = new ethers.Wallet(process.env.PRIVATE_KEY!, provider);
 
-    const datastoreAddress = process.env.VITE_OASIS_DATASTORE_ADDRESS;
+    const datastoreAddress = process.env.OASIS_DATASTORE_ADDRESS;
     const datastoreAbi = [
       'function createChildProfile(address,string,uint256,string,address,address,address,address) external'
     ];
@@ -268,7 +268,7 @@ async function createOasisProfile(
       checkingWallet,
       vaultWallet,
       parentWallet,
-      process.env.VITE_CELO_VERIFIER_ADDRESS!
+      process.env.CELO_VERIFIER_ADDRESS!
     );
     await tx.wait();
 

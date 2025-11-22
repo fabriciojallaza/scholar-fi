@@ -1,4 +1,4 @@
-.PHONY: help install build test deploy-base deploy-celo deploy-oasis deploy-all verify-base verify-celo export-abis clean rofl
+.PHONY: help install build test deploy-base deploy-celo deploy-oasis deploy-all verify-base verify-celo verify-oasis verify-all export-abis clean rofl
 
 # Detect OS
 ifeq ($(OS),Windows_NT)
@@ -31,6 +31,8 @@ help:
 	@echo "$(YELLOW)Verification:$(NC)"
 	@echo "  make verify-base    - Verify Base contract on Basescan"
 	@echo "  make verify-celo    - Verify Celo contract on Celoscan"
+	@echo "  make verify-oasis   - Verify Oasis contract (manual process)"
+	@echo "  make verify-all     - Verify all contracts"
 	@echo ""
 	@echo "$(YELLOW)Frontend Integration:$(NC)"
 	@echo "  make export-abis    - Export contract ABIs to frontend"
