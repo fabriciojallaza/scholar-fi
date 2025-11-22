@@ -1,0 +1,13 @@
+{
+  "name": "scholarfi-base-contracts",
+  "version": "1.0.0",
+  "description": "Base Sepolia bridge contracts using Hyperlane",
+  "dependencies": {
+    "@hyperlane-xyz/core": "^5.0.0",
+    "@openzeppelin/contracts": "^5.0.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "install-deps": "npm install"
+  }
+}

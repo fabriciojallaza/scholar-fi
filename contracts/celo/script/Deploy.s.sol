@@ -20,17 +20,21 @@ contract DeployScholarFi is Script {
 
     // Celo Sepolia Testnet addresses
     address constant SELF_HUB_V2_SEPOLIA = 0x16ECBA51e18a4a7e61fdC417f0d47AFEeDfbed74;
+    address constant HYPERLANE_MAILBOX_SEPOLIA = 0xD0680F80F4f947968206806C2598Cbc5b6FE5b03;
     string constant SCOPE_SEED = "scholar-fi-v1";
 
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address baseBridgeAddress = vm.envAddress("BASE_BRIDGE_ADDRESS");
 
         vm.startBroadcast(deployerPrivateKey);
 
         // Deploy ScholarFiVault
         ScholarFiVault vault = new ScholarFiVault(
             SELF_HUB_V2_SEPOLIA,
-            SCOPE_SEED
+            SCOPE_SEED,
+            HYPERLANE_MAILBOX_SEPOLIA,
+            baseBridgeAddress
         );
 
         vm.stopBroadcast();
@@ -41,15 +45,18 @@ contract DeployScholarFi is Script {
         console.log("========================================");
         console.log("ScholarFiVault:", address(vault));
         console.log("Self Hub V2:", SELF_HUB_V2_SEPOLIA);
+        console.log("Hyperlane Mailbox:", HYPERLANE_MAILBOX_SEPOLIA);
+        console.log("Base Bridge:", baseBridgeAddress);
         console.log("Scope Seed:", SCOPE_SEED);
         console.log("Scope (computed):", vault.scope());
         console.log("Config ID:", vm.toString(vault.verificationConfigId()));
         console.log("========================================");
         console.log("");
         console.log("Next steps:");
-        console.log("1. Update frontend with contract address");
-        console.log("2. Whitelist educational institutions");
-        console.log("3. Test with Privy gas sponsorship");
-        console.log("4. Verify contract on Celoscan");
+        console.log("1. Update Base Sepolia bridge with this vault address");
+        console.log("2. Update frontend with both contract addresses");
+        console.log("3. Whitelist educational institutions");
+        console.log("4. Test Hyperlane bridge from Base to Celo");
+        console.log("5. Verify contracts on explorers");
     }
 }

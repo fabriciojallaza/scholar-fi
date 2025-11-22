@@ -80,78 +80,12 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-orange-50 to-indigo-50">
-      <div className="max-w-md mx-auto min-h-screen bg-white shadow-xl relative">
+      <div className="w-full sm:max-w-md mx-auto min-h-screen bg-white sm:shadow-xl relative">
         {renderScreen()}
-        
+
         {showBottomNav && (
           <BottomNav currentScreen={currentScreen} onNavigate={(screen) => setCurrentScreen(screen as Screen)} />
         )}
-      </div>
-      
-      {/* Screen Navigation Toolbar (for demo purposes) */}
-      <div className="fixed bottom-0 left-0 right-0 bg-gray-900 text-white p-4 overflow-x-auto">
-        <div className="flex gap-2 justify-center max-w-4xl mx-auto flex-wrap">
-          <button
-            onClick={() => setCurrentScreen("onboarding")}
-            className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
-          >
-            Onboarding
-          </button>
-          <button
-            onClick={() => setCurrentScreen("dashboard")}
-            className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
-          >
-            Dashboard
-          </button>
-          <button
-            onClick={() => setCurrentScreen("spending")}
-            className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
-          >
-            Spending
-          </button>
-          <button
-            onClick={() => setCurrentScreen("merchants")}
-            className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
-          >
-            Merchants
-          </button>
-          <button
-            onClick={() => setCurrentScreen("transaction")}
-            className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
-          >
-            Transaction
-          </button>
-          <button
-            onClick={() => setCurrentScreen("savings")}
-            className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
-          >
-            Savings
-          </button>
-          <button
-            onClick={() => setCurrentScreen("teen")}
-            className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
-          >
-            Teen Wallet
-          </button>
-          <button
-            onClick={() => setCurrentScreen("release")}
-            className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
-          >
-            Release
-          </button>
-          <button
-            onClick={() => setCurrentScreen("faq")}
-            className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
-          >
-            FAQ
-          </button>
-          <button
-            onClick={() => setCurrentScreen("addFunds")}
-            className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
-          >
-            Add Funds
-          </button>
-        </div>
       </div>
     </div>
   );

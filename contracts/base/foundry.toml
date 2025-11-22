@@ -2,17 +2,16 @@
 src = "src"
 out = "out"
 libs = ["node_modules", "lib"]
-solc_version = "0.8.28"
-evm_version = "cancun"
+solc_version = "0.8.24"
 env_path = "../.env"
 remappings = [
-    "@selfxyz/contracts/=node_modules/@selfxyz/contracts/",
     "@hyperlane-xyz/core/=node_modules/@hyperlane-xyz/core/",
+    "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/",
     "forge-std/=lib/forge-std/src/"
 ]
 
 [rpc_endpoints]
-celo_sepolia = "${CELO_RPC_URL}"
+base_sepolia = "${BASE_SEPOLIA_RPC}"
 
 [etherscan]
-celo_sepolia = { key = "${CELOSCAN_API_KEY}" }
+base_sepolia = { key = "${BASESCAN_API_KEY}" }

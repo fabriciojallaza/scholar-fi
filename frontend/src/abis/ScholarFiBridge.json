@@ -1,0 +1,168 @@
+[
+  {
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "mailbox",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "celoDomain",
+        "type": "uint32",
+        "internalType": "uint32"
+      },
+      {
+        "name": "celoVaultAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "receive",
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "depositForChild",
+    "inputs": [
+      {
+        "name": "childWallet",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "messageId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "estimateFees",
+    "inputs": [
+      {
+        "name": "childWallet",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "fees",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getConfig",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "mailbox",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "celoDomain",
+        "type": "uint32",
+        "internalType": "uint32"
+      },
+      {
+        "name": "celoVaultAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "withdrawETH",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "DepositBridged",
+    "inputs": [
+      {
+        "name": "messageId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "childWallet",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "parentWallet",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "fees",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "InvalidReceiverAddress",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotEnoughBalance",
+    "inputs": [
+      {
+        "name": "currentBalance",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "requiredBalance",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "OnlyOwner",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ZeroAmount",
+    "inputs": []
+  }
+]

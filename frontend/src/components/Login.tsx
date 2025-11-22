@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { Lock, Mail, Eye, EyeOff, Wallet, Shield } from "lucide-react";
+import { Lock, Mail, Wallet, Shield, AlertCircle } from "lucide-react";
+import { usePrivy } from "@privy-io/react-auth";
 import { Button } from "./ui/button";
+import { useMultiChain } from "../hooks/useMultiChain";
 
 interface LoginProps {
   onLogin: () => void;
@@ -9,13 +11,46 @@ interface LoginProps {
 }
 
 export function Login({ onLogin, onSwitchToRegister }: LoginProps) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  // Safely use Privy hooks with error handling
+  let login: (() => void) | undefined;
+  let ready = false;
+  let authenticated = false;
+  let privyError: string | null = null;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onLogin();
+  try {
+    const privyHooks = usePrivy();
+    login = privyHooks.login;
+    ready = privyHooks.ready;
+    authenticated = privyHooks.authenticated;
+  } catch (err: any) {
+    console.error("Privy not initialized:", err);
+    privyError = "Privy authentication is not configured. Please add VITE_PRIVY_APP_ID to .env";
+  }
+
+  const { isConnected, address, error } = useMultiChain();
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Redirect to onboarding when authenticated
+  useEffect(() => {
+    if (authenticated && isConnected) {
+      onLogin();
+    }
+  }, [authenticated, isConnected, onLogin]);
+
+  const handleLogin = async () => {
+    if (!login) {
+      console.error("Privy login function not available");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      login();
+    } catch (err: any) {
+      console.error("Login failed:", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -37,7 +72,7 @@ export function Login({ onLogin, onSwitchToRegister }: LoginProps) {
           transition={{ delay: 0.1 }}
           className="text-center text-white mb-2"
         >
-          EduSafe Wallet
+          Scholar-Fi
         </motion.h1>
         <motion.p
           initial={{ opacity: 0 }}
@@ -45,7 +80,7 @@ export function Login({ onLogin, onSwitchToRegister }: LoginProps) {
           transition={{ delay: 0.2 }}
           className="text-center text-white/80 text-sm"
         >
-          Smart Crypto Wallet for Families
+          Smart Education Savings for Families
         </motion.p>
       </div>
 
@@ -57,79 +92,90 @@ export function Login({ onLogin, onSwitchToRegister }: LoginProps) {
         className="flex-1 bg-white rounded-t-[3rem] mt-8 p-8"
       >
         <h2 className="text-purple-900 mb-2">Welcome Back</h2>
-        <p className="text-gray-600 mb-8">Sign in to continue to your wallet</p>
+        <p className="text-gray-600 mb-8">Connect your wallet to continue</p>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Email Field */}
-          <div>
-            <label className="block text-sm text-gray-700 mb-2">Email Address</label>
-            <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="your.email@example.com"
-                className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                required
-              />
+        {/* Connection Status */}
+        {isConnected && address && (
+          <div className="mb-6 p-4 bg-green-50 rounded-2xl">
+            <p className="text-sm text-green-900 mb-1">Connected</p>
+            <p className="text-xs text-green-700 font-mono">{address.substring(0, 6)}...{address.substring(address.length - 4)}</p>
+          </div>
+        )}
+
+        {/* Error Display */}
+        {(error || privyError) && (
+          <div className="mb-6 p-4 bg-red-50 rounded-2xl flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm text-red-900">
+                {privyError ? "Configuration Error" : "Connection Error"}
+              </p>
+              <p className="text-xs text-red-700 mt-1">{privyError || error}</p>
             </div>
           </div>
+        )}
 
-          {/* Password Field */}
-          <div>
-            <label className="block text-sm text-gray-700 mb-2">Password</label>
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showPassword ? (
-                  <EyeOff className="w-5 h-5" />
-                ) : (
-                  <Eye className="w-5 h-5" />
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Forgot Password */}
-          <div className="flex justify-end">
-            <button
-              type="button"
-              className="text-sm text-purple-600 hover:text-purple-700"
-            >
-              Forgot password?
-            </button>
-          </div>
-
-          {/* Login Button */}
+        {/* Login Methods */}
+        <div className="space-y-4">
+          {/* Privy Login Button */}
           <Button
-            type="submit"
-            className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white py-6 rounded-2xl shadow-lg"
+            onClick={handleLogin}
+            disabled={!ready || isLoading || authenticated || !!privyError}
+            className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white py-6 rounded-2xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Sign In
+            {isLoading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="animate-spin">⏳</span>
+                Connecting...
+              </span>
+            ) : authenticated ? (
+              "Connected"
+            ) : (
+              <span className="flex items-center justify-center gap-2">
+                <Wallet className="w-5 h-5" />
+                Connect Wallet
+              </span>
+            )}
           </Button>
-        </form>
+
+          {/* Email Login (via Privy modal) */}
+          <button
+            onClick={handleLogin}
+            disabled={!ready || isLoading || authenticated || !!privyError}
+            className="w-full flex items-center justify-center gap-3 py-4 border-2 border-purple-200 rounded-2xl hover:border-purple-300 hover:bg-purple-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Mail className="w-5 h-5 text-purple-600" />
+            <span className="text-purple-900">Continue with Email</span>
+          </button>
+        </div>
 
         {/* Security Note */}
         <div className="mt-6 p-4 bg-purple-50 rounded-2xl flex items-start gap-3">
           <Shield className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm text-purple-900">Secure & Encrypted</p>
+            <p className="text-sm text-purple-900">Secure & Non-Custodial</p>
             <p className="text-xs text-purple-600 mt-1">
-              Your wallet and personal data are protected with bank-level encryption
+              Your wallet is created and secured by Privy. We never have access to your funds.
             </p>
+          </div>
+        </div>
+
+        {/* Multi-Chain Info */}
+        <div className="mt-4 p-4 bg-indigo-50 rounded-2xl">
+          <p className="text-sm text-indigo-900 mb-2">Multi-Chain Support</p>
+          <div className="space-y-1 text-xs text-indigo-700">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-indigo-600 rounded-full"></div>
+              <span>Base Sepolia - Deposits with gas sponsorship</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-indigo-600 rounded-full"></div>
+              <span>Celo Sepolia - Secure vault with age verification</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-indigo-600 rounded-full"></div>
+              <span>Oasis Sapphire - Encrypted data storage</span>
+            </div>
           </div>
         </div>
 

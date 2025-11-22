@@ -1,0 +1,9 @@
+[submodule "contracts/base/lib/forge-std"]
+	path = contracts/base/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "contracts/celo/lib/forge-std"]
+	path = contracts/celo/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "contracts/oasis/lib/forge-std"]
+	path = contracts/oasis/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std

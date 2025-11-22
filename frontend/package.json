@@ -1,9 +1,13 @@
 
   {
-      "name": "EduSafe Wallet UI Design",
+      "name": "scholar-fi-frontend",
       "version": "0.1.0",
       "private": true,
       "dependencies": {
+          "@privy-io/react-auth": "^1.88.4",
+          "@privy-io/wagmi": "^0.2.12",
+          "ethers": "^6.13.4",
+          "qrcode.react": "^4.1.0",
           "@radix-ui/react-accordion": "^1.2.3",
           "@radix-ui/react-alert-dialog": "^1.1.6",
           "@radix-ui/react-aspect-ratio": "^1.1.2",
@@ -50,6 +54,9 @@
       },
       "devDependencies": {
           "@types/node": "^20.10.0",
+          "@types/react": "^18.3.1",
+          "@types/react-dom": "^18.3.0",
+          "typescript": "^5.6.3",
           "@vitejs/plugin-react-swc": "^3.10.2",
           "vite": "6.3.5"
       },

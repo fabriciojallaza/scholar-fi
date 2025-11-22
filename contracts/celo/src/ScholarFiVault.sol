@@ -6,15 +6,18 @@ import {ISelfVerificationRoot} from "@selfxyz/contracts/contracts/interfaces/ISe
 import {SelfStructs} from "@selfxyz/contracts/contracts/libraries/SelfStructs.sol";
 import {SelfUtils} from "@selfxyz/contracts/contracts/libraries/SelfUtils.sol";
 import {IIdentityVerificationHubV2} from "@selfxyz/contracts/contracts/interfaces/IIdentityVerificationHubV2.sol";
+import {IMailbox} from "@hyperlane-xyz/core/contracts/interfaces/IMailbox.sol";
 
 /**
  * @title ScholarFiVault
  * @notice Educational savings vault for children with age-gated access via Self verification
- * @dev Integrates Self Protocol for 18+ age verification on Celo
+ * @dev Integrates Self Protocol for 18+ age verification on Celo Sepolia
+ * @dev Receives cross-chain deposits from Base Sepolia via Hyperlane
  *
  * Track Compliance:
  * - Self Track: On-chain age verification (18+) via SelfVerificationRoot
- * - Privy Track: Frontend gas sponsorship (configured in Privy dashboard)
+ * - Privy Track: Frontend gas sponsorship on Base Sepolia (configured in Privy dashboard)
+ * - Hyperlane Track: Cross-chain messaging from Base Sepolia to Celo Sepolia
  */
 contract ScholarFiVault is SelfVerificationRoot {
 
@@ -41,6 +44,8 @@ contract ScholarFiVault is SelfVerificationRoot {
     uint256 public constant SPENDING_PERCENTAGE = 70;   // 70% to spending balance
 
     address public immutable owner;
+    IMailbox public immutable mailbox;
+    address public immutable bridgeAddress;  // Base Sepolia bridge address
 
     // ============ Events ============
 
@@ -91,19 +96,42 @@ contract ScholarFiVault is SelfVerificationRoot {
     error NotOwner();
     error ZeroAmount();
     error ZeroAddress();
+    error NotMailbox();
+    error UnauthorizedSender();
+
+    // ============ Modifiers ============
+
+    /**
+     * @notice Only accept messages from the Hyperlane Mailbox
+     */
+    modifier onlyMailbox() {
+        if (msg.sender != address(mailbox)) revert NotMailbox();
+        _;
+    }
 
     // ============ Constructor ============
 
     /**
-     * @notice Deploy ScholarFiVault with Self age verification
-     * @param identityVerificationHubV2Address Self Hub V2 on Celo Alfajores: 0x68c931C9a534D37aa78094877F46fE46a49F1A51
+     * @notice Deploy ScholarFiVault with Self age verification and Hyperlane receiver
+     * @param identityVerificationHubV2Address Self Hub V2 on Celo Sepolia: 0x16ECBA51e18a4a7e61fdC417f0d47AFEeDfbed74
      * @param scopeSeed Unique scope identifier (max 31 bytes ASCII, e.g., "scholar-fi-v1")
+     * @param mailboxAddress Hyperlane Mailbox on Celo Sepolia: 0xD0680F80F4f947968206806C2598Cbc5b6FE5b03
+     * @param bridgeAddr ScholarFiBridge address on Base Sepolia (to validate sender)
      */
     constructor(
         address identityVerificationHubV2Address,
-        string memory scopeSeed
-    ) SelfVerificationRoot(identityVerificationHubV2Address, scopeSeed) {
+        string memory scopeSeed,
+        address mailboxAddress,
+        address bridgeAddr
+    )
+        SelfVerificationRoot(identityVerificationHubV2Address, scopeSeed)
+    {
+        if (mailboxAddress == address(0)) revert ZeroAddress();
+        if (bridgeAddr == address(0)) revert ZeroAddress();
+
         owner = msg.sender;
+        mailbox = IMailbox(mailboxAddress);
+        bridgeAddress = bridgeAddr;
 
         // Configure Self verification: 18+ years old, no country restrictions
         SelfUtils.UnformattedVerificationConfigV2 memory rawConfig =
@@ -116,6 +144,15 @@ contract ScholarFiVault is SelfVerificationRoot {
         verificationConfig = SelfUtils.formatVerificationConfigV2(rawConfig);
         verificationConfigId = IIdentityVerificationHubV2(identityVerificationHubV2Address)
             .setVerificationConfigV2(verificationConfig);
+    }
+
+    // ============ Internal Helper Functions ============
+
+    /**
+     * @notice Convert bytes32 to address for Hyperlane messaging
+     */
+    function _bytes32ToAddress(bytes32 _buf) internal pure returns (address) {
+        return address(uint160(uint256(_buf)));
     }
 
     // ============ Parent Functions ============
@@ -159,6 +196,50 @@ contract ScholarFiVault is SelfVerificationRoot {
         child.spendingBalance += spendingAmount;
 
         emit FundsDeposited(_childWallet, msg.sender, msg.value, vaultAmount, spendingAmount);
+    }
+
+    // ============ Hyperlane Functions ============
+
+    /**
+     * @notice Receives cross-chain deposits from Base Sepolia via Hyperlane
+     * @param _origin Domain of origin chain (Base Sepolia = 84532)
+     * @param _sender Address of sender on origin chain (Base bridge contract)
+     * @param _messageBody Encoded message data: abi.encode(childWallet, parentWallet)
+     * @dev Called automatically by Hyperlane Mailbox when message arrives from Base Sepolia
+     * @dev Native tokens must be sent separately (not part of Hyperlane message)
+     */
+    function handle(
+        uint32 _origin,
+        bytes32 _sender,
+        bytes calldata _messageBody
+    ) external payable onlyMailbox {
+        // Validate sender is the authorized bridge contract
+        address sender = _bytes32ToAddress(_sender);
+        if (sender != bridgeAddress) revert UnauthorizedSender();
+
+        // Decode child and parent addresses from message body
+        (address childWallet, address parentWallet) = abi.decode(
+            _messageBody,
+            (address, address)
+        );
+
+        // Validate child account exists and parent matches
+        ChildAccount storage child = children[childWallet];
+        if (child.parentWallet == address(0)) revert AccountNotFound();
+        if (child.parentWallet != parentWallet) revert NotParent();
+
+        // Get the transferred amount
+        uint256 totalAmount = msg.value;
+        if (totalAmount == 0) revert ZeroAmount();
+
+        // Split funds 30/70
+        uint256 vaultAmount = (totalAmount * VAULT_PERCENTAGE) / 100;
+        uint256 spendingAmount = totalAmount - vaultAmount;
+
+        child.vaultBalance += vaultAmount;
+        child.spendingBalance += spendingAmount;
+
+        emit FundsDeposited(childWallet, parentWallet, totalAmount, vaultAmount, spendingAmount);
     }
 
     // ============ Child Functions ============
@@ -281,4 +362,18 @@ contract ScholarFiVault is SelfVerificationRoot {
     ) {
         return (verificationConfigId, 18);
     }
+
+    /**
+     * @notice Get Hyperlane configuration
+     */
+    function getHyperlaneConfig() external view returns (
+        address mailboxAddress,
+        address authorizedBridge
+    ) {
+        return (address(mailbox), bridgeAddress);
+    }
+
+    // ============ Receive Function ============
+
+    receive() external payable {}
 }

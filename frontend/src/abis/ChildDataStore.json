@@ -1,0 +1,331 @@
+[
+  {
+    "type": "constructor",
+    "inputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "createChildProfile",
+    "inputs": [
+      {
+        "name": "_childAddress",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_encryptedName",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "_dateOfBirth",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "_parentEmail",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "getChildProfile",
+    "inputs": [
+      {
+        "name": "_childAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "encryptedName",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "dateOfBirth",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "parentEmail",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "totalDeposited",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "vaultGrowth",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "lastUpdated",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getVaultGrowth",
+    "inputs": [
+      {
+        "name": "_childAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "grantAccess",
+    "inputs": [
+      {
+        "name": "_accessor",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "hasAccess",
+    "inputs": [
+      {
+        "name": "_childAddress",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_accessor",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "owner",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "profileExists",
+    "inputs": [
+      {
+        "name": "_childAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "recordDeposit",
+    "inputs": [
+      {
+        "name": "_childAddress",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_additionalDeposit",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "revokeAccess",
+    "inputs": [
+      {
+        "name": "_accessor",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "updateVaultGrowth",
+    "inputs": [
+      {
+        "name": "_childAddress",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_newGrowth",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "AccessGranted",
+    "inputs": [
+      {
+        "name": "child",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "accessor",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "AccessRevoked",
+    "inputs": [
+      {
+        "name": "child",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "accessor",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ChildProfileCreated",
+    "inputs": [
+      {
+        "name": "child",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "parent",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ProfileUpdated",
+    "inputs": [
+      {
+        "name": "child",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "timestamp",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "VaultGrowthUpdated",
+    "inputs": [
+      {
+        "name": "child",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "newGrowth",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "ProfileAlreadyExists",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ProfileNotFound",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "Unauthorized",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ZeroAddress",
+    "inputs": []
+  }
+]

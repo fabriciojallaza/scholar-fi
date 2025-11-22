@@ -1,19 +1,13 @@
 {
-  "name": "celo",
+  "name": "scholarfi-celo-contracts",
   "version": "1.0.0",
-  "description": "**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**",
-  "main": "index.js",
-  "directories": {
-    "lib": "lib",
-    "test": "test"
-  },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "description": "Celo Sepolia vault contracts with Self Protocol and Hyperlane",
   "dependencies": {
-    "@selfxyz/contracts": "^1.2.3"
+    "@selfxyz/contracts": "^1.0.0",
+    "@hyperlane-xyz/core": "^5.0.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "install-deps": "npm install"
   }
 }
