@@ -3,13 +3,24 @@
 ## Deployed Contracts (ETHGlobal 2025)
 
 ### ScholarFiVault (Celo Sepolia)
-- **Address**: `0x1776402BE859fAf809b8f17dD6149f75d7Fb47B6`
+
+**v2 - With Emergency Withdrawal System (Current)**
+- **Address**: `0xCBdD7F730fBd55E6893E71c55D18Dd82F69E99D9`
 - **Network**: Celo Sepolia Testnet
 - **Chain ID**: 11142220
-- **Explorer**: https://celo-sepolia.blockscout.com/address/0x1776402BE859fAf809b8f17dD6149f75d7Fb47B6
+- **Explorer**: https://celo-sepolia.blockscout.com/address/0xCBdD7F730fBd55E6893E71c55D18Dd82F69E99D9
 - **Status**: ✅ Verified (Pass - Verified)
+- **Deployment TX**: `0xd8e8c29b6ce70df846a70dc3c8fbd46a4eb0bb8b18f36d4101c152c662f558b8`
+- **Gas Used**: 0.084 CELO
+- **Features**:
+  - ✅ Auto-split 30/70
+  - ✅ Self Protocol age verification
+  - ✅ Whitelisted institutions
+  - ✅ Emergency withdrawal (24h timelock, 90d cooldown, 50% max)
+
+**v1 - Original (Deprecated)**
+- **Address**: `0x1776402BE859fAf809b8f17dD6149f75d7Fb47B6`
 - **Deployment TX**: `0x21f9f9cde2e2ac66223c75a64a7fddbefd7f428919c4c2bbd8b2599bf4411934`
-- **Gas Used**: 0.070 CELO
 
 ### ChildDataStore (Oasis Sapphire Testnet)
 - **Address**: `0x1776402BE859fAf809b8f17dD6149f75d7Fb47B6`
@@ -82,6 +93,30 @@ Created: Block 10517017
 ---
 
 ## Test Transactions
+
+### Emergency Withdrawal Tests (v2)
+
+**1. Request Emergency Withdrawal**
+- TX: `0x24959f7a99260fcc8bc77ee3c5cc5864c454eabfb940d01af2b61592a676fab9`
+- Amount: 0.03 CELO (50% of 0.06 vault)
+- Status: ✅ Success (24h timelock started)
+- Event: `EmergencyRequested`
+
+**2. Attempt Early Execution**
+- Error: `TimelockNotExpired` ✅
+- Protection: 24h timelock working
+
+**3. Attempt Exceed Limit**
+- Tried: 0.04 CELO (66% of vault)
+- Error: `ExceedsEmergencyLimit` ✅
+- Protection: 50% max limit working
+
+**4. Cancel Emergency Request**
+- TX: `0x4fa903be2181aca6ac00fe72ab424d639c813c044f0f6d3c44b2aa76f945c77b`
+- Status: ✅ Success
+- Event: `EmergencyCancelled`
+
+### Basic Functionality Tests (v1 & v2)
 
 ### 1. Create Child Account
 - TX: `0x2cf78b6f9b0eded0888d3da275afb53b126cbc3d3e11460dd470e1b6cbe1fe1e`
