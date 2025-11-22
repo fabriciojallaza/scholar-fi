@@ -29,16 +29,29 @@ contract ScholarFiVault is SelfVerificationRoot {
         uint256 createdAt;
     }
 
+    struct EmergencyRequest {
+        uint256 amount;
+        uint256 requestedAt;
+        uint256 lastExecutedAt;    // Tracks last emergency withdrawal
+        bool executed;
+    }
+
     // ============ State Variables ============
 
     mapping(address => ChildAccount) public children;
     mapping(address => bool) public whitelistedInstitutions;
+    mapping(address => EmergencyRequest) public emergencyRequests;
 
     SelfStructs.VerificationConfigV2 public verificationConfig;
     bytes32 public verificationConfigId;
 
     uint256 public constant VAULT_PERCENTAGE = 30;     // 30% to locked vault
     uint256 public constant SPENDING_PERCENTAGE = 70;   // 70% to spending balance
+
+    // Emergency withdrawal constants
+    uint256 public constant EMERGENCY_TIMELOCK = 24 hours;
+    uint256 public constant EMERGENCY_COOLDOWN = 90 days;
+    uint256 public constant MAX_EMERGENCY_PERCENT = 50; // Max 50% of vault per emergency
 
     address public immutable owner;
 
@@ -80,6 +93,21 @@ contract ScholarFiVault is SelfVerificationRoot {
         ISelfVerificationRoot.GenericDiscloseOutputV2 output
     );
 
+    event EmergencyRequested(
+        address indexed child,
+        uint256 amount,
+        uint256 executeAt
+    );
+
+    event EmergencyExecuted(
+        address indexed child,
+        uint256 amount
+    );
+
+    event EmergencyCancelled(
+        address indexed child
+    );
+
     // ============ Errors ============
 
     error AccountAlreadyExists();
@@ -91,6 +119,12 @@ contract ScholarFiVault is SelfVerificationRoot {
     error NotOwner();
     error ZeroAmount();
     error ZeroAddress();
+    error EmergencyPending();
+    error NoEmergencyRequest();
+    error TimelockNotExpired();
+    error CooldownActive();
+    error ExceedsEmergencyLimit();
+    error AlreadyExecuted();
 
     // ============ Constructor ============
 
@@ -224,6 +258,88 @@ contract ScholarFiVault is SelfVerificationRoot {
         bytes memory /* userDefinedData */
     ) public view override returns (bytes32) {
         return verificationConfigId;
+    }
+
+    // ============ Emergency Functions ============
+
+    /**
+     * @notice Request emergency withdrawal from vault (24h timelock)
+     * @param _childWallet Child's address
+     * @param _amount Amount to withdraw (max 50% of vault)
+     * @dev Can only be called once every 90 days
+     */
+    function requestEmergencyWithdrawal(address _childWallet, uint256 _amount) external {
+        ChildAccount storage child = children[_childWallet];
+        EmergencyRequest storage request = emergencyRequests[_childWallet];
+        
+        if (child.parentWallet != msg.sender) revert NotParent();
+        if (_amount == 0) revert ZeroAmount();
+        if (_amount > child.vaultBalance) revert InsufficientBalance();
+        
+        // Check maximum emergency limit (50% of vault)
+        uint256 maxEmergency = (child.vaultBalance * MAX_EMERGENCY_PERCENT) / 100;
+        if (_amount > maxEmergency) revert ExceedsEmergencyLimit();
+        
+        // Check cooldown period (90 days since last execution)
+        if (request.lastExecutedAt != 0) {
+            if (block.timestamp < request.lastExecutedAt + EMERGENCY_COOLDOWN) {
+                revert CooldownActive();
+            }
+        }
+        
+        // Check no pending request
+        if (request.requestedAt != 0 && !request.executed) {
+            if (block.timestamp < request.requestedAt + EMERGENCY_TIMELOCK) {
+                revert EmergencyPending();
+            }
+        }
+
+        emergencyRequests[_childWallet] = EmergencyRequest({
+            amount: _amount,
+            requestedAt: block.timestamp,
+            lastExecutedAt: request.lastExecutedAt,
+            executed: false
+        });
+
+        emit EmergencyRequested(_childWallet, _amount, block.timestamp + EMERGENCY_TIMELOCK);
+    }
+
+    /**
+     * @notice Execute emergency withdrawal after 24h timelock
+     * @param _childWallet Child's address
+     */
+    function executeEmergencyWithdrawal(address _childWallet) external {
+        ChildAccount storage child = children[_childWallet];
+        EmergencyRequest storage request = emergencyRequests[_childWallet];
+        
+        if (child.parentWallet != msg.sender) revert NotParent();
+        if (request.requestedAt == 0) revert NoEmergencyRequest();
+        if (block.timestamp < request.requestedAt + EMERGENCY_TIMELOCK) {
+            revert TimelockNotExpired();
+        }
+        if (request.executed) revert AlreadyExecuted();
+
+        // Update state
+        request.executed = true;
+        request.lastExecutedAt = block.timestamp;
+        child.vaultBalance -= request.amount;
+
+        // Transfer to parent
+        (bool success, ) = msg.sender.call{value: request.amount}("");
+        require(success, "Transfer failed");
+
+        emit EmergencyExecuted(_childWallet, request.amount);
+    }
+
+    /**
+     * @notice Cancel pending emergency request
+     * @param _childWallet Child's address
+     */
+    function cancelEmergencyWithdrawal(address _childWallet) external {
+        if (children[_childWallet].parentWallet != msg.sender) revert NotParent();
+        
+        delete emergencyRequests[_childWallet];
+        emit EmergencyCancelled(_childWallet);
     }
 
     // ============ Admin Functions ============
