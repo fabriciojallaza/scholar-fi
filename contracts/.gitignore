@@ -1,0 +1,40 @@
+# Environment files (contains private keys)
+**/.env
+*.env
+!**/.env.example
+
+# Foundry/Forge
+**/cache/
+**/out/
+**/broadcast/
+**/lib/
+
+# Node modules and dependencies
+**/node_modules/
+**/package-lock.json
+
+# Rust/Cargo
+**/target/
+**/Cargo.lock
+**/dependencies/
+
+# IDE
+.idea/
+.vscode/
+**/*.swp
+**/*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test coverage
+coverage/
+lcov.info
