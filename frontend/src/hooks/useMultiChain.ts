@@ -4,19 +4,19 @@ import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { CHAIN_CONFIG, CONTRACT_ADDRESSES } from "../config/contracts";
 
 // Import ABIs
-import ScholarFiBridgeABI from "../abis/ScholarFiBridge.json";
-import ScholarFiVaultABI from "../abis/ScholarFiVault.json";
+import ParentDepositSplitterABI from "../abis/ParentDepositSplitter.json";
+import ScholarFiAgeVerifierABI from "../abis/ScholarFiAgeVerifier.json";
 import ChildDataStoreABI from "../abis/ChildDataStore.json";
 
 export interface MultiChainProviders {
-  // Base Sepolia (Privy + gas sponsorship)
+  // Base Sepolia (Privy + gas sponsorship + deposits)
   baseProvider: ethers.BrowserProvider | null;
   baseSigner: ethers.JsonRpcSigner | null;
-  bridgeContract: ethers.Contract | null;
+  splitterContract: ethers.Contract | null; // ParentDepositSplitter
 
-  // Celo Sepolia (vault + Self verification)
+  // Celo Sepolia (Self age verification)
   celoProvider: ethers.JsonRpcProvider | null;
-  vaultContract: ethers.Contract | null;
+  verifierContract: ethers.Contract | null; // ScholarFiAgeVerifier
 
   // Oasis Sapphire (encrypted storage)
   oasisProvider: ethers.JsonRpcProvider | null;
@@ -31,9 +31,9 @@ export interface MultiChainProviders {
 
 /**
  * Hook for managing multi-chain connections
- * - Base Sepolia: Privy wallet with gas sponsorship
- * - Celo Sepolia: Read-only provider for vault operations
- * - Oasis Sapphire: Read-only provider for encrypted data
+ * - Base Sepolia: All wallet operations (Privy HD wallets + gas sponsorship)
+ * - Celo Sepolia: Age verification via Self Protocol
+ * - Oasis Sapphire: Encrypted child data storage
  */
 export function useMultiChain(): MultiChainProviders {
   // Safely use Privy hooks with error handling
@@ -111,20 +111,20 @@ export function useMultiChain(): MultiChainProviders {
   }, [authenticated, user, wallets, privyAvailable]);
 
   // Create contract instances
-  const bridgeContract = useMemo(() => {
-    if (!baseSigner || !CONTRACT_ADDRESSES.baseBridge) return null;
+  const splitterContract = useMemo(() => {
+    if (!baseSigner || !CONTRACT_ADDRESSES.baseSplitter) return null;
     return new ethers.Contract(
-      CONTRACT_ADDRESSES.baseBridge,
-      ScholarFiBridgeABI,
+      CONTRACT_ADDRESSES.baseSplitter,
+      ParentDepositSplitterABI,
       baseSigner
     );
   }, [baseSigner]);
 
-  const vaultContract = useMemo(() => {
-    if (!celoProvider || !CONTRACT_ADDRESSES.celoVault) return null;
+  const verifierContract = useMemo(() => {
+    if (!celoProvider || !CONTRACT_ADDRESSES.celoVerifier) return null;
     return new ethers.Contract(
-      CONTRACT_ADDRESSES.celoVault,
-      ScholarFiVaultABI,
+      CONTRACT_ADDRESSES.celoVerifier,
+      ScholarFiAgeVerifierABI,
       celoProvider
     );
   }, [celoProvider]);
@@ -141,9 +141,9 @@ export function useMultiChain(): MultiChainProviders {
   return {
     baseProvider,
     baseSigner,
-    bridgeContract,
+    splitterContract,
     celoProvider,
-    vaultContract,
+    verifierContract,
     oasisProvider,
     datastoreContract,
     isConnected: authenticated && !!address,

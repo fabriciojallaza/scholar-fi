@@ -2,13 +2,12 @@
 src = "src"
 out = "out"
 libs = ["lib", "node_modules"]
-env_path = "../.env"
 remappings = [
     "@oasisprotocol/sapphire-contracts/=node_modules/@oasisprotocol/sapphire-contracts/",
     "forge-std/=lib/forge-std/src/"
 ]
 
 [rpc_endpoints]
-sapphire_testnet = "https://testnet.sapphire.oasis.io"
+sapphire-testnet = "${SAPPHIRE_TESTNET_RPC}"
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

@@ -40,22 +40,9 @@ export const CHAIN_CONFIG = {
 } as const;
 
 export const CONTRACT_ADDRESSES = {
-  baseBridge: import.meta.env.VITE_BASE_BRIDGE_ADDRESS || "",
-  celoVault: import.meta.env.VITE_CELO_VAULT_ADDRESS || "",
+  baseSplitter: import.meta.env.VITE_BASE_SPLITTER_ADDRESS || "",
+  celoVerifier: import.meta.env.VITE_CELO_VERIFIER_ADDRESS || "",
   oasisDataStore: import.meta.env.VITE_OASIS_DATASTORE_ADDRESS || "",
-} as const;
-
-// Hyperlane Configuration
-export const HYPERLANE_CONFIG = {
-  explorerUrl: "https://explorer.hyperlane.xyz",
-  mailboxes: {
-    baseSepolia: "0x6966b0E55883d49BFB24539356a2f8A673E02039",
-    celoSepolia: "0xD0680F80F4f947968206806C2598Cbc5b6FE5b03",
-  },
-  domains: {
-    baseSepolia: 84532,
-    celoSepolia: 11142220,
-  },
 } as const;
 
 // Self Protocol Configuration
@@ -76,17 +63,17 @@ export const PRIVY_CONFIG = {
 export function validateConfig(): { isValid: boolean; errors: string[] } {
   const errors: string[] = [];
 
-  if (!CONTRACT_ADDRESSES.baseBridge) {
-    errors.push("Missing Base bridge contract address");
+  if (!CONTRACT_ADDRESSES.baseSplitter) {
+    errors.push("Missing Base splitter contract address (VITE_BASE_SPLITTER_ADDRESS)");
   }
-  if (!CONTRACT_ADDRESSES.celoVault) {
-    errors.push("Missing Celo vault contract address");
+  if (!CONTRACT_ADDRESSES.celoVerifier) {
+    errors.push("Missing Celo verifier contract address (VITE_CELO_VERIFIER_ADDRESS)");
   }
   if (!CONTRACT_ADDRESSES.oasisDataStore) {
-    errors.push("Missing Oasis data store contract address");
+    errors.push("Missing Oasis data store contract address (VITE_OASIS_DATASTORE_ADDRESS)");
   }
   if (!PRIVY_CONFIG.appId) {
-    errors.push("Missing Privy App ID");
+    errors.push("Missing Privy App ID (VITE_PRIVY_APP_ID)");
   }
 
   return {

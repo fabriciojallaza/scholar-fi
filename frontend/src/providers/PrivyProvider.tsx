@@ -53,8 +53,8 @@ export function PrivyProvider({ children }: PrivyProviderProps) {
 
   // Check if Privy is properly configured
   const hasValidPrivyId = PRIVY_CONFIG.appId &&
-                          PRIVY_CONFIG.appId !== "clxxx-placeholder-replace-with-real-id" &&
-                          PRIVY_CONFIG.appId.startsWith("cl");
+                          PRIVY_CONFIG.appId.length > 10 &&
+                          !PRIVY_CONFIG.appId.includes("placeholder");
 
   // If no valid Privy ID, render children without PrivyAuth wrapper but show warning
   if (!hasValidPrivyId) {

@@ -36,9 +36,10 @@ contract DeployChildDataStore is Script {
         console.log("========================================");
         console.log("");
         console.log("Next steps:");
-        console.log("1. Update ROFL service with contract address");
-        console.log("2. Grant ROFL service access to update vault growth");
-        console.log("3. Test encrypted storage from frontend");
-        console.log("4. Verify on Oasis Explorer");
+        console.log("1. Copy contract address to .env (OASIS_DATASTORE_ADDRESS)");
+        console.log("2. Configure serverless webhooks to update child profiles");
+        console.log("3. Grant backend access to record deposits and age verification");
+        console.log("4. Test encrypted profile creation via serverless API");
+        console.log("5. Verify confidential storage on Oasis Explorer");
     }
 }

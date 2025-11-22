@@ -18,11 +18,25 @@ contract ChildDataStore {
     /**
      * @notice Child profile data - AUTOMATICALLY ENCRYPTED on Sapphire
      * @dev All fields stored in encrypted state thanks to Sapphire's confidential EVM
+     * @dev Links to Privy HD wallets on Base Sepolia
      */
     struct ChildProfile {
-        string encryptedName;          // Child's name (can be encrypted client-side too)
+        // Encrypted sensitive data
+        string encryptedName;          // Child's name (encrypted)
         uint256 dateOfBirth;           // Birthday timestamp
         string parentEmail;            // Parent contact
+
+        // Base Sepolia Privy HD wallet addresses (public data, but mapping is private)
+        address baseCheckingWallet;    // Wallet 1 - 70% spending (child is additional_signer)
+        address baseVaultWallet;       // Wallet 2 - 30% savings (child is additional_signer)
+        address parentBaseWallet;      // Wallet 0 - parent's main wallet
+
+        // Celo Sepolia verification status
+        address celoVerifierAddress;   // ScholarFiAgeVerifier contract address on Celo
+        bool ageVerifiedOnCelo;        // True when Self ZK proof completes
+        uint256 verifiedAt;            // Timestamp of verification
+
+        // Balance tracking
         uint256 totalDeposited;        // Total parent contributions
         uint256 vaultGrowth;           // Yield earned (updated by ROFL)
         uint256 lastUpdated;
@@ -63,25 +77,42 @@ contract ChildDataStore {
     // ============ Core Functions ============
 
     /**
-     * @notice Create a new child profile (called from Celo or parent directly)
-     * @param _childAddress Child's wallet address
-     * @param _encryptedName Child's name (optionally pre-encrypted client-side)
+     * @notice Create a new child profile with Base wallet addresses
+     * @param _childAddress Child's unique identifier
+     * @param _encryptedName Child's name (encrypted)
      * @param _dateOfBirth Birthday as Unix timestamp
      * @param _parentEmail Parent's email for notifications
+     * @param _baseCheckingWallet Privy HD wallet 1 on Base (70% spending)
+     * @param _baseVaultWallet Privy HD wallet 2 on Base (30% vault)
+     * @param _parentBaseWallet Parent's main Privy wallet on Base
+     * @param _celoVerifierAddress ScholarFiAgeVerifier contract on Celo
      */
     function createChildProfile(
         address _childAddress,
         string memory _encryptedName,
         uint256 _dateOfBirth,
-        string memory _parentEmail
+        string memory _parentEmail,
+        address _baseCheckingWallet,
+        address _baseVaultWallet,
+        address _parentBaseWallet,
+        address _celoVerifierAddress
     ) external {
         if (_childAddress == address(0)) revert ZeroAddress();
+        if (_baseCheckingWallet == address(0)) revert ZeroAddress();
+        if (_baseVaultWallet == address(0)) revert ZeroAddress();
+        if (_parentBaseWallet == address(0)) revert ZeroAddress();
         if (childProfiles[_childAddress].exists) revert ProfileAlreadyExists();
 
         childProfiles[_childAddress] = ChildProfile({
             encryptedName: _encryptedName,
             dateOfBirth: _dateOfBirth,
             parentEmail: _parentEmail,
+            baseCheckingWallet: _baseCheckingWallet,
+            baseVaultWallet: _baseVaultWallet,
+            parentBaseWallet: _parentBaseWallet,
+            celoVerifierAddress: _celoVerifierAddress,
+            ageVerifiedOnCelo: false,
+            verifiedAt: 0,
             totalDeposited: 0,
             vaultGrowth: 0,
             lastUpdated: block.timestamp,
@@ -115,7 +146,7 @@ contract ChildDataStore {
     }
 
     /**
-     * @notice Update total deposited amount
+     * @notice Update total deposited amount (called by backend webhook)
      * @param _childAddress Child's address
      * @param _additionalDeposit Amount to add
      */
@@ -129,6 +160,27 @@ contract ChildDataStore {
         }
 
         profile.totalDeposited += _additionalDeposit;
+        profile.lastUpdated = block.timestamp;
+
+        emit ProfileUpdated(_childAddress, block.timestamp);
+    }
+
+    /**
+     * @notice Mark child as age-verified on Celo (called by backend webhook)
+     * @param _childAddress Child's address
+     * @dev Called when ChildVerified event fires on Celo
+     */
+    function markAgeVerified(address _childAddress) external {
+        ChildProfile storage profile = childProfiles[_childAddress];
+        if (!profile.exists) revert ProfileNotFound();
+
+        // Only owner or authorized can update
+        if (msg.sender != owner && !accessGranted[_childAddress][msg.sender]) {
+            revert Unauthorized();
+        }
+
+        profile.ageVerifiedOnCelo = true;
+        profile.verifiedAt = block.timestamp;
         profile.lastUpdated = block.timestamp;
 
         emit ProfileUpdated(_childAddress, block.timestamp);
@@ -173,6 +225,10 @@ contract ChildDataStore {
             string memory encryptedName,
             uint256 dateOfBirth,
             string memory parentEmail,
+            address baseCheckingWallet,
+            address baseVaultWallet,
+            address parentBaseWallet,
+            bool ageVerifiedOnCelo,
             uint256 totalDeposited,
             uint256 vaultGrowth,
             uint256 lastUpdated
@@ -190,9 +246,36 @@ contract ChildDataStore {
             profile.encryptedName,
             profile.dateOfBirth,
             profile.parentEmail,
+            profile.baseCheckingWallet,
+            profile.baseVaultWallet,
+            profile.parentBaseWallet,
+            profile.ageVerifiedOnCelo,
             profile.totalDeposited,
             profile.vaultGrowth,
             profile.lastUpdated
+        );
+    }
+
+    /**
+     * @notice Get Base wallet addresses for a child
+     * @param _childAddress Child's address
+     * @return checking Checking wallet address on Base
+     * @return vault Vault wallet address on Base
+     * @return parent Parent's wallet address on Base
+     */
+    function getBaseWallets(address _childAddress)
+        external
+        view
+        returns (address checking, address vault, address parent)
+    {
+        ChildProfile memory profile = childProfiles[_childAddress];
+        if (!profile.exists) revert ProfileNotFound();
+
+        // Wallet addresses are less sensitive, allow broader access
+        return (
+            profile.baseCheckingWallet,
+            profile.baseVaultWallet,
+            profile.parentBaseWallet
         );
     }
 

@@ -1,0 +1,14 @@
+{
+  "crons": [
+    {
+      "path": "/api/webhooks/celo",
+      "schedule": "*/5 * * * *"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
+    }
+  ]
+}

@@ -3,60 +3,55 @@ pragma solidity 0.8.28;
 
 import {Script} from "forge-std/Script.sol";
 import {console} from "forge-std/console.sol";
-import {ScholarFiVault} from "../src/ScholarFiVault.sol";
+import {ScholarFiAgeVerifier} from "../src/ScholarFiAgeVerifier.sol";
 
 /**
- * @title DeployScholarFi
- * @notice Deployment script for ScholarFiVault on Celo Sepolia Testnet
+ * @title DeployScholarFiAgeVerifier
+ * @notice Deployment script for ScholarFiAgeVerifier on Celo Sepolia Testnet
  *
  * Usage:
- * forge script script/Deploy.s.sol:DeployScholarFi \
+ * forge script script/Deploy.s.sol:DeployScholarFiAgeVerifier \
  *   --rpc-url $CELO_RPC_URL \
  *   --private-key $PRIVATE_KEY \
  *   --broadcast \
  *   --verify
  */
-contract DeployScholarFi is Script {
+contract DeployScholarFiAgeVerifier is Script {
 
     // Celo Sepolia Testnet addresses
     address constant SELF_HUB_V2_SEPOLIA = 0x16ECBA51e18a4a7e61fdC417f0d47AFEeDfbed74;
-    address constant HYPERLANE_MAILBOX_SEPOLIA = 0xD0680F80F4f947968206806C2598Cbc5b6FE5b03;
     string constant SCOPE_SEED = "scholar-fi-v1";
 
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        address baseBridgeAddress = vm.envAddress("BASE_BRIDGE_ADDRESS");
 
         vm.startBroadcast(deployerPrivateKey);
 
-        // Deploy ScholarFiVault
-        ScholarFiVault vault = new ScholarFiVault(
+        // Deploy ScholarFiAgeVerifier
+        ScholarFiAgeVerifier verifier = new ScholarFiAgeVerifier(
             SELF_HUB_V2_SEPOLIA,
-            SCOPE_SEED,
-            HYPERLANE_MAILBOX_SEPOLIA,
-            baseBridgeAddress
+            SCOPE_SEED
         );
 
         vm.stopBroadcast();
 
         // Log deployment info
         console.log("========================================");
-        console.log("Scholar-Fi Deployed on Celo Sepolia");
+        console.log("ScholarFiAgeVerifier Deployed on Celo Sepolia");
         console.log("========================================");
-        console.log("ScholarFiVault:", address(vault));
+        console.log("Contract Address:", address(verifier));
         console.log("Self Hub V2:", SELF_HUB_V2_SEPOLIA);
-        console.log("Hyperlane Mailbox:", HYPERLANE_MAILBOX_SEPOLIA);
-        console.log("Base Bridge:", baseBridgeAddress);
         console.log("Scope Seed:", SCOPE_SEED);
-        console.log("Scope (computed):", vault.scope());
-        console.log("Config ID:", vm.toString(vault.verificationConfigId()));
+        console.log("Scope (computed):", verifier.scope());
+        console.log("Config ID:", vm.toString(verifier.verificationConfigId()));
+        console.log("Owner:", verifier.owner());
         console.log("========================================");
         console.log("");
         console.log("Next steps:");
-        console.log("1. Update Base Sepolia bridge with this vault address");
-        console.log("2. Update frontend with both contract addresses");
-        console.log("3. Whitelist educational institutions");
-        console.log("4. Test Hyperlane bridge from Base to Celo");
-        console.log("5. Verify contracts on explorers");
+        console.log("1. Copy contract address to .env (CELO_VERIFIER_ADDRESS)");
+        console.log("2. Setup backend webhook to listen for ChildVerified events");
+        console.log("3. Register children via registerChild(childAddress, parentAddress)");
+        console.log("4. Child scans QR code in Self app to verify age 18+");
+        console.log("5. Backend updates Privy policy on Base when verification completes");
     }
 }

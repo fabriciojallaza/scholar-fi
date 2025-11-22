@@ -34,10 +34,11 @@ export function useOasisProfile(childAddress: string) {
         setError(null);
 
         // Call getChildProfile on Oasis datastore
+        // Returns: [encryptedName, dateOfBirth, parentEmail, baseCheckingWallet, baseVaultWallet, parentBaseWallet, ageVerifiedOnCelo, totalDeposited, vaultGrowth, lastUpdated]
         const result = await datastoreContract.getChildProfile(childAddress);
 
-        // Check if profile exists
-        if (!result[0] || result[0] === ethers.ZeroAddress) {
+        // Check if profile exists (first returned value is encryptedName string)
+        if (!result || result[0] === "") {
           setProfile({
             name: "",
             walletAddress: childAddress,
@@ -49,13 +50,13 @@ export function useOasisProfile(childAddress: string) {
           return;
         }
 
-        // Parse profile data
+        // Parse profile data according to new ABI
         setProfile({
-          name: result[1] || "Unknown",
-          walletAddress: result[0],
-          vaultGrowth: ethers.formatEther(result[2] || 0),
-          parentApprovals: Number(result[3] || 0),
-          createdAt: Number(result[4] || 0),
+          name: result[0] || "Unknown", // encryptedName
+          walletAddress: childAddress,
+          vaultGrowth: ethers.formatEther(result[8] || 0), // vaultGrowth
+          parentApprovals: result[6] ? 1 : 0, // ageVerifiedOnCelo as approval count
+          createdAt: Number(result[9] || 0), // lastUpdated
           exists: true
         });
       } catch (err: any) {

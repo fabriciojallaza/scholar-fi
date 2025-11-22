@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "motion/react";
 import {
   ChevronLeft,
@@ -14,7 +14,6 @@ import {
 import { Button } from "./ui/button";
 import { useMultiChain } from "../hooks/useMultiChain";
 import { ethers } from "ethers";
-import { HYPERLANE_CONFIG } from "../config/contracts";
 
 interface AddFundsProps {
   onBack: () => void;
@@ -22,14 +21,13 @@ interface AddFundsProps {
 
 export function AddFunds({ onBack }: AddFundsProps) {
   const [amount, setAmount] = useState("");
-  const [childWallet, setChildWallet] = useState("");
+  const [childAddress, setChildAddress] = useState("");
   const [isDepositing, setIsDepositing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [messageId, setMessageId] = useState<string | null>(null);
-  const [estimatedFees, setEstimatedFees] = useState<string>("0");
+  const [txHash, setTxHash] = useState<string | null>(null);
 
-  const { bridgeContract, baseSigner, address, isConnected } = useMultiChain();
+  const { splitterContract, baseSigner, address, isConnected } = useMultiChain();
 
   const quickAmounts = ["10", "25", "50", "100"];
 
@@ -37,37 +35,14 @@ export function AddFunds({ onBack }: AddFundsProps) {
   const vaultAmount = numAmount * 0.30; // 30% to vault
   const spendingAmount = numAmount * 0.70; // 70% to spending
 
-  // Estimate Hyperlane fees when amount or child wallet changes
-  useEffect(() => {
-    async function getFees() {
-      if (!bridgeContract || !childWallet || numAmount <= 0) {
-        setEstimatedFees("0");
-        return;
-      }
-
-      try {
-        const fees = await bridgeContract.estimateFees(
-          childWallet,
-          ethers.parseEther(amount)
-        );
-        setEstimatedFees(ethers.formatEther(fees));
-      } catch (err) {
-        console.error("Failed to estimate fees:", err);
-        setEstimatedFees("0.001"); // Fallback estimate
-      }
-    }
-
-    getFees();
-  }, [bridgeContract, childWallet, amount, numAmount]);
-
   const handleAddFunds = async () => {
-    if (!isConnected || !bridgeContract || !baseSigner) {
+    if (!isConnected || !splitterContract || !baseSigner) {
       setError("Please connect your wallet");
       return;
     }
 
-    if (!childWallet || !ethers.isAddress(childWallet)) {
-      setError("Please enter a valid child wallet address");
+    if (!childAddress || !ethers.isAddress(childAddress)) {
+      setError("Please enter a valid child address");
       return;
     }
 
@@ -81,41 +56,30 @@ export function AddFunds({ onBack }: AddFundsProps) {
       setError(null);
       setSuccess(false);
 
-      // Calculate total = deposit amount + Hyperlane fees
       const depositAmount = ethers.parseEther(amount);
-      const fees = ethers.parseEther(estimatedFees);
-      const totalAmount = depositAmount + fees;
 
-      // Call depositForChild on Base bridge
-      const tx = await bridgeContract.depositForChild(childWallet, {
-        value: totalAmount
+      // Call depositForChild on Base ParentDepositSplitter
+      // This automatically splits 70/30 to checking/vault wallets
+      const tx = await splitterContract.depositForChild(childAddress, {
+        value: depositAmount
       });
 
       // Wait for transaction
       const receipt = await tx.wait();
 
-      // Extract message ID from event
-      const event = receipt.logs
-        .map((log: any) => {
-          try {
-            return bridgeContract.interface.parseLog(log);
-          } catch {
-            return null;
-          }
-        })
-        .find((e: any) => e?.name === "DepositBridged");
-
-      if (event) {
-        setMessageId(event.args.messageId);
-      }
-
+      setTxHash(receipt.hash);
       setSuccess(true);
+
+      // Reset form
+      setAmount("");
     } catch (err: any) {
       console.error("Failed to add funds:", err);
       if (err.code === "ACTION_REJECTED") {
         setError("Transaction rejected by user");
       } else if (err.message?.includes("insufficient funds")) {
-        setError("Insufficient balance to cover deposit + fees");
+        setError("Insufficient balance for deposit");
+      } else if (err.message?.includes("ChildNotRegistered")) {
+        setError("Child not registered. Please complete onboarding first.");
       } else {
         setError(err.message || "Failed to deposit funds. Please try again.");
       }
@@ -138,7 +102,7 @@ export function AddFunds({ onBack }: AddFundsProps) {
           <h1 className="text-white">Add Funds</h1>
         </div>
         <p className="text-white/80 text-sm ml-14">
-          Cross-chain deposit via Hyperlane
+          Deposit to child's account on Base Sepolia
         </p>
       </div>
 
@@ -157,16 +121,16 @@ export function AddFunds({ onBack }: AddFundsProps) {
                   Deposit Successful!
                 </p>
                 <p className="text-xs text-green-700 mb-2">
-                  Your deposit is being bridged to Celo Sepolia via Hyperlane.
+                  Funds automatically split: 70% to checking, 30% to vault.
                 </p>
-                {messageId && (
+                {txHash && (
                   <a
-                    href={`${HYPERLANE_CONFIG.explorerUrl}/message/${messageId}`}
+                    href={`https://sepolia.basescan.org/tx/${txHash}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs text-green-600 hover:text-green-700 underline flex items-center gap-1"
                   >
-                    Track message <ExternalLink className="w-3 h-3" />
+                    View transaction <ExternalLink className="w-3 h-3" />
                   </a>
                 )}
               </div>
@@ -187,19 +151,22 @@ export function AddFunds({ onBack }: AddFundsProps) {
           </div>
         )}
 
-        {/* Child Wallet Input */}
+        {/* Child Address Input */}
         <div className="bg-white rounded-3xl p-6 shadow-sm mb-4">
-          <label className="block text-sm text-gray-600 mb-3">Child's Wallet Address</label>
+          <label className="block text-sm text-gray-600 mb-3">Child Address</label>
           <input
             type="text"
-            value={childWallet}
+            value={childAddress}
             onChange={(e) => {
-              setChildWallet(e.target.value);
+              setChildAddress(e.target.value);
               setError(null);
             }}
             placeholder="0x..."
             className="w-full px-4 py-3 text-sm font-mono text-purple-900 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           />
+          <p className="text-xs text-gray-500 mt-2">
+            The child address from onboarding (not the wallet addresses)
+          </p>
         </div>
 
         {/* Amount Input */}
@@ -247,14 +214,14 @@ export function AddFunds({ onBack }: AddFundsProps) {
           >
             <div className="flex items-center gap-2 mb-4">
               <Info className="w-4 h-4 text-purple-600" />
-              <p className="text-sm text-purple-900">Fund Allocation</p>
+              <p className="text-sm text-purple-900">Automatic Split</p>
             </div>
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Wallet className="w-4 h-4 text-indigo-600" />
-                  <span className="text-sm text-gray-700">Spending Balance (70%)</span>
+                  <span className="text-sm text-gray-700">Checking Wallet (70%)</span>
                 </div>
                 <span className="text-indigo-600">{spendingAmount.toFixed(4)} ETH</span>
               </div>
@@ -262,26 +229,21 @@ export function AddFunds({ onBack }: AddFundsProps) {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <PiggyBank className="w-4 h-4 text-amber-600" />
-                  <span className="text-sm text-gray-700">Vault (30%)</span>
+                  <span className="text-sm text-gray-700">Vault Wallet (30%)</span>
                 </div>
                 <span className="text-amber-600">{vaultAmount.toFixed(4)} ETH</span>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <ExternalLink className="w-4 h-4 text-gray-600" />
-                  <span className="text-sm text-gray-700">Hyperlane Fees</span>
-                </div>
-                <span className="text-gray-600">{parseFloat(estimatedFees).toFixed(4)} ETH</span>
-              </div>
-
               <div className="pt-3 border-t border-purple-200">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-purple-900">Total Cost</span>
+                  <span className="text-sm font-medium text-purple-900">Total Deposit</span>
                   <span className="text-purple-900 font-medium">
-                    {(numAmount + parseFloat(estimatedFees)).toFixed(4)} ETH
+                    {numAmount.toFixed(4)} ETH
                   </span>
                 </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Gas fees sponsored by Privy
+                </p>
               </div>
             </div>
           </motion.div>
@@ -290,7 +252,7 @@ export function AddFunds({ onBack }: AddFundsProps) {
         {/* Add Funds Button */}
         <Button
           onClick={handleAddFunds}
-          disabled={!isConnected || !amount || numAmount <= 0 || !childWallet || isDepositing}
+          disabled={!isConnected || !amount || numAmount <= 0 || !childAddress || isDepositing}
           className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white py-6 rounded-2xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {isDepositing ? (
@@ -309,8 +271,8 @@ export function AddFunds({ onBack }: AddFundsProps) {
         {/* Info Note */}
         <div className="mt-4 p-4 bg-white rounded-2xl">
           <p className="text-xs text-gray-500 text-center">
-            Deposits are bridged from Base Sepolia to Celo Sepolia via Hyperlane.
-            The transaction may take a few minutes to complete.
+            Funds are deposited on Base Sepolia and automatically split 70/30 between
+            checking and vault wallets. Gas fees are sponsored by Privy.
           </p>
         </div>
       </div>

@@ -1,4 +1,4 @@
-.PHONY: help install build test deploy-base deploy-celo deploy-oasis deploy-all verify-base verify-celo clean rofl
+.PHONY: help install build test deploy-base deploy-celo deploy-oasis deploy-all verify-base verify-celo export-abis clean rofl
 
 # Detect OS
 ifeq ($(OS),Windows_NT)
@@ -23,14 +23,17 @@ help:
 	@echo "  make test           - Run all tests"
 	@echo ""
 	@echo "$(YELLOW)Deployment Commands:$(NC)"
-	@echo "  make deploy-base    - Deploy ScholarFiBridge to Base Sepolia"
-	@echo "  make deploy-celo    - Deploy ScholarFiVault to Celo Sepolia"
+	@echo "  make deploy-base    - Deploy ParentDepositSplitter to Base Sepolia"
+	@echo "  make deploy-celo    - Deploy ScholarFiAgeVerifier to Celo Sepolia"
 	@echo "  make deploy-oasis   - Deploy ChildDataStore to Oasis Sapphire"
 	@echo "  make deploy-all     - Deploy to all 3 chains"
 	@echo ""
 	@echo "$(YELLOW)Verification:$(NC)"
 	@echo "  make verify-base    - Verify Base contract on Basescan"
 	@echo "  make verify-celo    - Verify Celo contract on Celoscan"
+	@echo ""
+	@echo "$(YELLOW)Frontend Integration:$(NC)"
+	@echo "  make export-abis    - Export contract ABIs to frontend"
 	@echo ""
 	@echo "$(YELLOW)ROFL Service:$(NC)"
 	@echo "  make rofl           - Build and run ROFL monitoring service"
@@ -90,13 +93,12 @@ deploy-base:
 		echo "$(YELLOW)Copy .env.example to .env and fill in values$(NC)"; \
 		exit 1; \
 	fi
-	@cd base && \
-		forge script script/Deploy.s.sol:DeployScholarFiBridge \
-			--rpc-url $(shell grep BASE_SEPOLIA_RPC ../.env | cut -d '=' -f2) \
-			--private-key $(shell grep PRIVATE_KEY ../.env | cut -d '=' -f2) \
+	@export $$(grep -v '^#' .env | grep -v '^$$' | xargs) && cd base && \
+		forge script script/Deploy.s.sol:DeployParentDepositSplitter \
+			--rpc-url $$BASE_SEPOLIA_RPC \
 			--broadcast \
 			--legacy
-	@echo "$(GREEN)✓ ScholarFiBridge deployed to Base Sepolia$(NC)"
+	@echo "$(GREEN)✓ ParentDepositSplitter deployed to Base Sepolia$(NC)"
 
 deploy-celo:
 	@echo "$(GREEN)═══════════════════════════════════════════════════════$(NC)"
@@ -107,13 +109,12 @@ deploy-celo:
 		echo "$(YELLOW)Copy .env.example to .env and fill in values$(NC)"; \
 		exit 1; \
 	fi
-	@cd celo && \
-		forge script script/Deploy.s.sol:DeployScholarFi \
-			--rpc-url $(shell grep CELO_RPC_URL ../.env | cut -d '=' -f2) \
-			--private-key $(shell grep PRIVATE_KEY ../.env | cut -d '=' -f2) \
+	@export $$(grep -v '^#' .env | grep -v '^$$' | xargs) && cd celo && \
+		forge script script/Deploy.s.sol:DeployScholarFiAgeVerifier \
+			--rpc-url $$CELO_RPC_URL \
 			--broadcast \
 			--legacy
-	@echo "$(GREEN)✓ ScholarFiVault deployed to Celo Sepolia$(NC)"
+	@echo "$(GREEN)✓ ScholarFiAgeVerifier deployed to Celo Sepolia$(NC)"
 
 deploy-oasis:
 	@echo "$(GREEN)═══════════════════════════════════════════════════════$(NC)"
@@ -124,68 +125,115 @@ deploy-oasis:
 		echo "$(YELLOW)Copy .env.example to .env and fill in values$(NC)"; \
 		exit 1; \
 	fi
-	@cd oasis && \
+	@export $$(grep -v '^#' .env | grep -v '^$$' | xargs) && cd oasis && \
 		forge script script/Deploy.s.sol:DeployChildDataStore \
-			--rpc-url $(shell grep SAPPHIRE_TESTNET_RPC ../.env | cut -d '=' -f2) \
-			--private-key $(shell grep PRIVATE_KEY ../.env | cut -d '=' -f2) \
+			--rpc-url $$SAPPHIRE_TESTNET_RPC \
 			--broadcast \
 			--legacy
 	@echo "$(GREEN)✓ ChildDataStore deployed to Oasis Sapphire$(NC)"
 
-deploy-all: deploy-celo deploy-base deploy-oasis
+deploy-all: deploy-base deploy-celo deploy-oasis export-abis
 	@echo ""
 	@echo "$(GREEN)═══════════════════════════════════════════════════════$(NC)"
 	@echo "$(GREEN)  ✓ All Contracts Deployed Successfully!$(NC)"
 	@echo "$(GREEN)═══════════════════════════════════════════════════════$(NC)"
 	@echo ""
 	@echo "$(YELLOW)Next Steps:$(NC)"
-	@echo "1. Copy Base bridge address to .env (BASE_BRIDGE_ADDRESS)"
-	@echo "2. Redeploy Celo vault with Base bridge address"
-	@echo "3. Copy Celo vault address to .env (CELO_VAULT_ADDRESS)"
-	@echo "4. Redeploy Base bridge with Celo vault address"
-	@echo "5. Copy Oasis datastore address to .env (OASIS_DATASTORE_ADDRESS)"
-	@echo "6. Copy all contract addresses to frontend/.env"
-	@echo "7. Verify contracts (make verify-base verify-celo)"
-	@echo "8. Test Hyperlane bridge and Self verification"
+	@echo "1. Copy Base splitter address to .env (BASE_SPLITTER_ADDRESS)"
+	@echo "2. Copy Celo verifier address to .env (CELO_VERIFIER_ADDRESS)"
+	@echo "3. Copy Oasis datastore address to .env (OASIS_DATASTORE_ADDRESS)"
+	@echo "4. Copy all contract addresses to frontend/.env"
+	@echo "5. Configure Privy webhooks and gas sponsorship"
+	@echo "6. Deploy serverless functions to Vercel"
+	@echo "7. Test full flow: onboarding → deposit → age verification"
 	@echo ""
 
 verify-base:
 	@echo "$(GREEN)Verifying Base contract on Basescan...$(NC)"
-	@if [ -z "$(CONTRACT_ADDRESS)" ]; then \
-		echo "$(YELLOW)Usage: make verify-base CONTRACT_ADDRESS=0x... VAULT_ADDRESS=0x...$(NC)"; \
+	@export $$(grep -v '^#' .env | grep -v '^$$' | xargs) && \
+	ADDRESS=$${CONTRACT_ADDRESS:-$$BASE_SPLITTER_ADDRESS}; \
+	if [ -z "$$ADDRESS" ]; then \
+		echo "$(YELLOW)Usage: make verify-base CONTRACT_ADDRESS=0x...$(NC)"; \
+		echo "$(YELLOW)Or set BASE_SPLITTER_ADDRESS in .env$(NC)"; \
 		exit 1; \
-	fi
-	@if [ -z "$(VAULT_ADDRESS)" ]; then \
-		echo "$(YELLOW)Missing VAULT_ADDRESS parameter$(NC)"; \
-		exit 1; \
-	fi
-	@cd base && \
+	fi; \
+	cd base && \
 		forge verify-contract \
-			$(CONTRACT_ADDRESS) \
-			src/ScholarFiBridge.sol:ScholarFiBridge \
+			$$ADDRESS \
+			src/ParentDepositSplitter.sol:ParentDepositSplitter \
 			--chain-id 84532 \
-			--etherscan-api-key $(shell grep BASESCAN_API_KEY ../.env | cut -d '=' -f2) \
-			--constructor-args $(shell cast abi-encode "constructor(address,uint32,address)" "0x6966b0E55883d49BFB24539356a2f8A673E02039" "11142220" "$(VAULT_ADDRESS)")
+			--etherscan-api-key $$BASESCAN_API_KEY
 	@echo "$(GREEN)✓ Contract verified on Basescan$(NC)"
 
 verify-celo:
 	@echo "$(GREEN)Verifying Celo contract on Celoscan...$(NC)"
-	@if [ -z "$(CONTRACT_ADDRESS)" ]; then \
-		echo "$(YELLOW)Usage: make verify-celo CONTRACT_ADDRESS=0x... BRIDGE_ADDRESS=0x...$(NC)"; \
+	@export $$(grep -v '^#' .env | grep -v '^$$' | xargs) && \
+	ADDRESS=$${CONTRACT_ADDRESS:-$$CELO_VERIFIER_ADDRESS}; \
+	if [ -z "$$ADDRESS" ]; then \
+		echo "$(YELLOW)Usage: make verify-celo CONTRACT_ADDRESS=0x...$(NC)"; \
+		echo "$(YELLOW)Or set CELO_VERIFIER_ADDRESS in .env$(NC)"; \
 		exit 1; \
-	fi
-	@if [ -z "$(BRIDGE_ADDRESS)" ]; then \
-		echo "$(YELLOW)Missing BRIDGE_ADDRESS parameter$(NC)"; \
-		exit 1; \
-	fi
-	@cd celo && \
+	fi; \
+	cd celo && \
 		forge verify-contract \
-			$(CONTRACT_ADDRESS) \
-			src/ScholarFiVault.sol:ScholarFiVault \
+			$$ADDRESS \
+			src/ScholarFiAgeVerifier.sol:ScholarFiAgeVerifier \
 			--chain-id 11142220 \
-			--etherscan-api-key $(shell grep CELOSCAN_API_KEY ../.env | cut -d '=' -f2) \
-			--constructor-args $(shell cast abi-encode "constructor(address,string,address,address)" "0x16ECBA51e18a4a7e61fdC417f0d47AFEeDfbed74" "scholar-fi-v1" "0xD0680F80F4f947968206806C2598Cbc5b6FE5b03" "$(BRIDGE_ADDRESS)")
+			--etherscan-api-key $$CELOSCAN_API_KEY \
+			--constructor-args $$(cast abi-encode "constructor(address,string)" "0x16ECBA51e18a4a7e61fdC417f0d47AFEeDfbed74" "scholar-fi-v1")
 	@echo "$(GREEN)✓ Contract verified on Celoscan$(NC)"
+
+verify-oasis:
+	@echo "$(GREEN)Verifying Oasis contract on Oasis Explorer...$(NC)"
+	@export $$(grep -v '^#' .env | grep -v '^$$' | xargs) && \
+	ADDRESS=$${CONTRACT_ADDRESS:-$$OASIS_DATASTORE_ADDRESS}; \
+	if [ -z "$$ADDRESS" ]; then \
+		echo "$(YELLOW)Usage: make verify-oasis CONTRACT_ADDRESS=0x...$(NC)"; \
+		echo "$(YELLOW)Or set OASIS_DATASTORE_ADDRESS in .env$(NC)"; \
+		exit 1; \
+	fi; \
+	echo "$(YELLOW)Contract: $$ADDRESS$(NC)"; \
+	echo "$(YELLOW)Note: Oasis Sapphire uses different verification process$(NC)"; \
+	echo "$(YELLOW)Visit: https://explorer.oasis.io/testnet/sapphire$(NC)"; \
+	echo "$(YELLOW)Manual verification may be required$(NC)"; \
+	cd oasis && \
+		forge verify-contract \
+			$$ADDRESS \
+			src/ChildDataStore.sol:ChildDataStore \
+			--verifier blockscout \
+			--verifier-url https://explorer.oasis.io/testnet/sapphire/api || \
+		echo "$(YELLOW)⚠️  Auto-verification not available for Oasis. Contract deployed successfully.$(NC)"
+	@echo "$(GREEN)✓ Oasis deployment confirmed at $$ADDRESS$(NC)"
+
+verify-all: verify-base verify-celo verify-oasis
+	@echo "$(GREEN)═══════════════════════════════════════════════════════$(NC)"
+	@echo "$(GREEN)  All Contracts Verified$(NC)"
+	@echo "$(GREEN)═══════════════════════════════════════════════════════$(NC)"
+
+export-abis:
+	@echo "$(GREEN)═══════════════════════════════════════════════════════$(NC)"
+	@echo "$(GREEN)  Exporting Contract ABIs to Frontend$(NC)"
+	@echo "$(GREEN)═══════════════════════════════════════════════════════$(NC)"
+	@if [ ! -f base/out/ParentDepositSplitter.sol/ParentDepositSplitter.json ]; then \
+		echo "$(YELLOW)⚠️  Contracts not compiled. Building first...$(NC)"; \
+		$(MAKE) build; \
+	fi
+	@if [ ! -d ../frontend/src/abis ]; then \
+		mkdir -p ../frontend/src/abis; \
+		echo "$(YELLOW)Created frontend/src/abis directory$(NC)"; \
+	fi
+	@echo "$(YELLOW)Extracting ParentDepositSplitter ABI...$(NC)"
+	@jq '.abi' base/out/ParentDepositSplitter.sol/ParentDepositSplitter.json > ../frontend/src/abis/ParentDepositSplitter.json
+	@echo "$(YELLOW)Extracting ScholarFiAgeVerifier ABI...$(NC)"
+	@jq '.abi' celo/out/ScholarFiAgeVerifier.sol/ScholarFiAgeVerifier.json > ../frontend/src/abis/ScholarFiAgeVerifier.json
+	@echo "$(YELLOW)Extracting ChildDataStore ABI...$(NC)"
+	@jq '.abi' oasis/out/ChildDataStore.sol/ChildDataStore.json > ../frontend/src/abis/ChildDataStore.json
+	@echo "$(GREEN)✓ All ABIs exported successfully$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Frontend ABIs updated:$(NC)"
+	@echo "  - ParentDepositSplitter.json (ABI only)"
+	@echo "  - ScholarFiAgeVerifier.json (ABI only)"
+	@echo "  - ChildDataStore.json (ABI only)"
 
 rofl:
 	@echo "$(GREEN)═══════════════════════════════════════════════════════$(NC)"

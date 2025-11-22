@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { Wallet, UserPlus, Sparkles, ChevronRight, Loader2, AlertCircle } from "lucide-react";
+import { Wallet, UserPlus, Sparkles, ChevronRight, Loader2, AlertCircle, Calendar } from "lucide-react";
 import { Button } from "./ui/button";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
-import { useMultiChain } from "../hooks/useMultiChain";
-import { ethers } from "ethers";
+import { usePrivy } from "@privy-io/react-auth";
 
 interface ParentOnboardingProps {
   onComplete: () => void;
@@ -12,17 +11,17 @@ interface ParentOnboardingProps {
 export function ParentOnboarding({ onComplete }: ParentOnboardingProps) {
   const [step, setStep] = useState(1);
   const [childName, setChildName] = useState("");
-  const [childWalletAddress, setChildWalletAddress] = useState("");
+  const [childDateOfBirth, setChildDateOfBirth] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { vaultContract, celoProvider, address } = useMultiChain();
+  const { user, authenticated } = usePrivy();
 
   const steps = [
     {
       icon: UserPlus,
-      title: "Create parent account",
-      description: "Set up your secure account"
+      title: "Welcome",
+      description: "You're logged in with Privy"
     },
     {
       icon: Sparkles,
@@ -31,46 +30,59 @@ export function ParentOnboarding({ onComplete }: ParentOnboardingProps) {
     },
     {
       icon: Wallet,
-      title: "Generate child's smart wallet",
-      description: "We'll create a secure Web3 wallet"
+      title: "Create child account",
+      description: "We'll set up everything automatically"
     }
   ];
 
-  const generateChildWallet = () => {
-    const wallet = ethers.Wallet.createRandom();
-    setChildWalletAddress(wallet.address);
-  };
-
   const handleCreateAccount = async () => {
-    if (!vaultContract || !childWalletAddress) {
-      setError("Please connect wallet and enter child wallet address");
+    if (!authenticated || !user) {
+      setError("Please log in to continue");
       return;
     }
 
-    if (!ethers.isAddress(childWalletAddress)) {
-      setError("Invalid wallet address");
+    // Get parent's email from Privy user object
+    const parentEmail = user.email?.address || user.google?.email || user.twitter?.username;
+    if (!parentEmail) {
+      setError("Unable to retrieve your email. Please ensure you logged in with email.");
       return;
     }
+
+    // Convert date of birth to Unix timestamp
+    const dobTimestamp = new Date(childDateOfBirth).getTime() / 1000;
 
     try {
       setIsCreating(true);
       setError(null);
 
-      // Call createChildAccount on Celo vault
-      const tx = await vaultContract.createChildAccount(childWalletAddress);
-      await tx.wait();
+      // Call serverless API to create child account
+      const response = await fetch('/api/create-child-account', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          parentUserId: user.id,
+          childName,
+          childDateOfBirth: dobTimestamp,
+          parentEmail,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create child account');
+      }
+
+      const data = await response.json();
+
+      console.log('✅ Child account created:', data);
 
       // Success! Move to dashboard
       onComplete();
     } catch (err: any) {
       console.error("Failed to create child account:", err);
-      if (err.code === "ACTION_REJECTED") {
-        setError("Transaction rejected by user");
-      } else if (err.message?.includes("AccountAlreadyExists")) {
-        setError("This child wallet already has an account");
-      } else {
-        setError(err.message || "Failed to create account. Please try again.");
-      }
+      setError(err.message || "Failed to create account. Please try again.");
     } finally {
       setIsCreating(false);
     }
@@ -82,6 +94,10 @@ export function ParentOnboarding({ onComplete }: ParentOnboardingProps) {
     } else if (step === 2) {
       if (!childName.trim()) {
         setError("Please enter your child's name");
+        return;
+      }
+      if (!childDateOfBirth) {
+        setError("Please enter your child's date of birth");
         return;
       }
       setStep(3);
@@ -148,31 +164,37 @@ export function ParentOnboarding({ onComplete }: ParentOnboardingProps) {
                 className="w-full px-4 py-3 rounded-xl border-2 border-purple-200 focus:border-purple-500 focus:outline-none"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-purple-900 mb-2 flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                Date of Birth
+              </label>
+              <input
+                type="date"
+                value={childDateOfBirth}
+                onChange={(e) => {
+                  setChildDateOfBirth(e.target.value);
+                  setError(null);
+                }}
+                className="w-full px-4 py-3 rounded-xl border-2 border-purple-200 focus:border-purple-500 focus:outline-none"
+              />
+              <p className="text-xs text-gray-500 mt-2">
+                Required for age verification when your child turns 18
+              </p>
+            </div>
           </div>
         )}
 
         {step === 3 && (
           <div className="w-full max-w-sm mb-6 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-purple-900 mb-2">
-                Child's Wallet Address
-              </label>
-              <input
-                type="text"
-                value={childWalletAddress}
-                onChange={(e) => {
-                  setChildWalletAddress(e.target.value);
-                  setError(null);
-                }}
-                placeholder="0x..."
-                className="w-full px-4 py-3 rounded-xl border-2 border-purple-200 focus:border-purple-500 focus:outline-none font-mono text-sm"
-              />
-              <button
-                onClick={generateChildWallet}
-                className="mt-2 text-sm text-purple-600 hover:text-purple-700 underline"
-              >
-                Generate new wallet
-              </button>
+            <div className="p-4 bg-purple-50 rounded-2xl">
+              <p className="text-sm text-purple-900 mb-2">What happens next:</p>
+              <ul className="text-xs text-purple-700 space-y-1">
+                <li>• Child Privy account created</li>
+                <li>• Checking wallet (70% spending)</li>
+                <li>• Vault wallet (30% savings)</li>
+                <li>• Registered across all chains</li>
+              </ul>
             </div>
           </div>
         )}
