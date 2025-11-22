@@ -40,7 +40,7 @@ impl Default for MonitoringConfig {
     fn default() -> Self {
         Self {
             celo_rpc: std::env::var("CELO_RPC_URL")
-                .unwrap_or_else(|_| "https://alfajores-forno.celo-testnet.org".to_string()),
+                .unwrap_or_else(|_| "https://celo-sepolia-rpc.publicnode.com".to_string()),
             oasis_rpc: std::env::var("SAPPHIRE_TESTNET_RPC")
                 .unwrap_or_else(|_| "https://testnet.sapphire.oasis.io".to_string()),
             scholar_fi_vault_address: std::env::var("SCHOLAR_FI_VAULT")
