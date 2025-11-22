@@ -21,13 +21,13 @@ make deploy-celo
 You'll see something like:
 ```
 ScholarFiVault: 0xABC...123
-Self Hub V2: 0x68c931C9a534D37aa78094877F46fE46a49F1A51
+Self Hub V2: 0x16ECBA51e18a4a7e61fdC417f0d47AFEeDfbed74
 Config ID: 0x7b64...7d61
 ```
 
 Save the ScholarFiVault address - you'll need it later.
 
-View on explorer: https://alfajores.celoscan.io/address/YOUR_ADDRESS
+View on explorer: https://sepolia.celoscan.io/address/YOUR_ADDRESS
 
 ## Deploy to Oasis
 
@@ -69,7 +69,7 @@ Then verify:
 make verify-celo CONTRACT_ADDRESS=0xYOUR_VAULT_ADDRESS
 ```
 
-Check it worked: https://alfajores.celoscan.io/address/YOUR_ADDRESS#code
+Check it worked: https://sepolia.celoscan.io/address/YOUR_ADDRESS#code
 
 **Oasis (Sourcify):**
 
@@ -89,7 +89,7 @@ Update `rofl/.env` with your deployed addresses:
 ```bash
 SCHOLAR_FI_VAULT=0xABC...123  # Your Celo address
 CHILD_DATA_STORE=0xDEF...456  # Your Oasis address
-CELO_RPC_URL=https://alfajores-forno.celo-testnet.org
+CELO_RPC_URL=https://sepolia-forno.celo-testnet.org
 SAPPHIRE_TESTNET_RPC=https://testnet.sapphire.oasis.io
 CHECK_INTERVAL=3600
 ```
@@ -106,7 +106,7 @@ make rofl
 cast send 0xYOUR_VAULT_ADDRESS \
   "createChildAccount(address)" \
   0xCHILD_WALLET_ADDRESS \
-  --rpc-url https://alfajores-forno.celo-testnet.org \
+  --rpc-url https://sepolia-forno.celo-testnet.org \
   --private-key $PRIVATE_KEY
 ```
 
@@ -116,7 +116,7 @@ cast send 0xYOUR_VAULT_ADDRESS \
   "depositFunds(address)" \
   0xCHILD_WALLET_ADDRESS \
   --value 0.1ether \
-  --rpc-url https://alfajores-forno.celo-testnet.org \
+  --rpc-url https://sepolia-forno.celo-testnet.org \
   --private-key $PRIVATE_KEY
 ```
 
@@ -145,7 +145,7 @@ cast send 0xYOUR_VAULT_ADDRESS \
   "setWhitelistedInstitution(address,bool)" \
   0xINSTITUTION_ADDRESS \
   true \
-  --rpc-url https://alfajores-forno.celo-testnet.org \
+  --rpc-url https://sepolia-forno.celo-testnet.org \
   --private-key $PRIVATE_KEY
 ```
 
@@ -164,7 +164,7 @@ cast send 0xYOUR_VAULT_ADDRESS \
 After deployment you'll have:
 - ScholarFiVault on Celo: 0xABC...
 - ChildDataStore on Oasis: 0xDEF...
-- Self Hub V2 (existing): 0x68c931C9a534D37aa78094877F46fE46a49F1A51
+- Self Hub V2 (existing): 0x16ECBA51e18a4a7e61fdC417f0d47AFEeDfbed74
 
 Both verified and ready to use with Privy frontend.
 

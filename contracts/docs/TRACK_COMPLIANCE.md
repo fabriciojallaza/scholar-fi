@@ -10,7 +10,7 @@ How Scholar-Fi meets ETHGlobal track requirements.
 
 **Gas sponsorship setup:**
 - Enabled in Privy dashboard (Transaction Management → Gas Sponsorship)
-- Chain: Celo Alfajores
+- Chain: Celo Sepolia
 - Uses Privy's built-in sponsorship (no custom paymaster logic)
 
 **Gasless transactions:**
@@ -69,8 +69,8 @@ contract ScholarFiVault is SelfVerificationRoot {
 }
 ```
 
-**Deployed on Celo Alfajores:**
-- Self Hub V2: `0x68c931C9a534D37aa78094877F46fE46a49F1A51`
+**Deployed on Celo Sepolia:**
+- Self Hub V2: `0x16ECBA51e18a4a7e61fdC417f0d47AFEeDfbed74`
 - Scope seed: `"scholar-fi-v1"`
 
 **Age verification hook:**

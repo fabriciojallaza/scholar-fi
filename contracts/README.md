@@ -14,7 +14,7 @@ Parents can create education savings accounts for their kids:
 ## How it works
 
 Frontend (Next.js + Privy) talks to contracts on two chains:
-- Celo Alfajores: Main vault contract with Self age verification
+- Celo Sepolia: Main vault contract with Self age verification
 - Oasis Sapphire: Encrypted child data storage
 - ROFL service: Monitors vaults and updates growth (simplified TEE concept)
 
@@ -111,12 +111,12 @@ make rofl           # Run monitoring service
 
 ## Networks
 
-**Celo Alfajores**
-- RPC: https://alfajores-forno.celo-testnet.org
-- Chain ID: 44787
-- Explorer: https://alfajores.celoscan.io
-- Faucet: https://faucet.celo.org
-- Self Hub V2: 0x68c931C9a534D37aa78094877F46fE46a49F1A51
+**Celo Sepolia Testnet**
+- RPC: https://celo-sepolia-rpc.publicnode.com
+- Chain ID: 11142220
+- Explorer: https://sepolia.celoscan.io
+- Faucet: https://faucet.celo.org/celo-sepolia
+- Self Hub V2: 0x16ECBA51e18a4a7e61fdC417f0d47AFEeDfbed74
 
 **Oasis Sapphire Testnet**
 - RPC: https://testnet.sapphire.oasis.io

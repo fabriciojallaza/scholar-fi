@@ -7,7 +7,7 @@ import {ScholarFiVault} from "../src/ScholarFiVault.sol";
 
 /**
  * @title DeployScholarFi
- * @notice Deployment script for ScholarFiVault on Celo Alfajores
+ * @notice Deployment script for ScholarFiVault on Celo Sepolia Testnet
  *
  * Usage:
  * forge script script/Deploy.s.sol:DeployScholarFi \
@@ -18,8 +18,8 @@ import {ScholarFiVault} from "../src/ScholarFiVault.sol";
  */
 contract DeployScholarFi is Script {
 
-    // Celo Alfajores Testnet addresses
-    address constant SELF_HUB_V2_ALFAJORES = 0x68c931C9a534D37aa78094877F46fE46a49F1A51;
+    // Celo Sepolia Testnet addresses
+    address constant SELF_HUB_V2_SEPOLIA = 0x16ECBA51e18a4a7e61fdC417f0d47AFEeDfbed74;
     string constant SCOPE_SEED = "scholar-fi-v1";
 
     function run() external {
@@ -29,7 +29,7 @@ contract DeployScholarFi is Script {
 
         // Deploy ScholarFiVault
         ScholarFiVault vault = new ScholarFiVault(
-            SELF_HUB_V2_ALFAJORES,
+            SELF_HUB_V2_SEPOLIA,
             SCOPE_SEED
         );
 
@@ -37,10 +37,10 @@ contract DeployScholarFi is Script {
 
         // Log deployment info
         console.log("========================================");
-        console.log("Scholar-Fi Deployed on Celo Alfajores");
+        console.log("Scholar-Fi Deployed on Celo Sepolia");
         console.log("========================================");
         console.log("ScholarFiVault:", address(vault));
-        console.log("Self Hub V2:", SELF_HUB_V2_ALFAJORES);
+        console.log("Self Hub V2:", SELF_HUB_V2_SEPOLIA);
         console.log("Scope Seed:", SCOPE_SEED);
         console.log("Scope (computed):", vault.scope());
         console.log("Config ID:", vm.toString(vault.verificationConfigId()));

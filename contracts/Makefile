@@ -16,7 +16,7 @@ help:
 	@echo "  make test           - Run all tests"
 	@echo ""
 	@echo "$(YELLOW)Deployment Commands:$(NC)"
-	@echo "  make deploy-celo    - Deploy ScholarFiVault to Celo Alfajores"
+	@echo "  make deploy-celo    - Deploy ScholarFiVault to Celo Sepolia"
 	@echo "  make deploy-oasis   - Deploy ChildDataStore to Oasis Sapphire"
 	@echo "  make deploy-all     - Deploy to both chains"
 	@echo ""
@@ -32,6 +32,22 @@ help:
 	@echo "$(GREEN)═══════════════════════════════════════════════════════$(NC)"
 
 install:
+	@echo "$(GREEN)Checking prerequisites...$(NC)"
+	@if ! command -v node > /dev/null 2>&1; then \
+		echo "$(YELLOW)⚠️  Node.js not found. Please install from https://nodejs.org$(NC)"; \
+		exit 1; \
+	fi
+	@if ! command -v forge > /dev/null 2>&1; then \
+		echo "$(YELLOW)⚠️  Foundry not found. Install with:$(NC)"; \
+		echo "$(YELLOW)   curl -L https://foundry.paradigm.xyz | bash$(NC)"; \
+		echo "$(YELLOW)   foundryup$(NC)"; \
+		exit 1; \
+	fi
+	@if ! command -v cargo > /dev/null 2>&1; then \
+		echo "$(YELLOW)⚠️  Rust not found. Install with:$(NC)"; \
+		echo "$(YELLOW)   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh$(NC)"; \
+		exit 1; \
+	fi
 	@echo "$(GREEN)Installing Celo contracts dependencies...$(NC)"
 	cd celo && npm install && forge install
 	@echo "$(GREEN)Installing Oasis contracts dependencies...$(NC)"
@@ -58,7 +74,7 @@ test:
 
 deploy-celo:
 	@echo "$(GREEN)═══════════════════════════════════════════════════════$(NC)"
-	@echo "$(GREEN)  Deploying to Celo Alfajores Testnet$(NC)"
+	@echo "$(GREEN)  Deploying to Celo Sepolia Testnet$(NC)"
 	@echo "$(GREEN)═══════════════════════════════════════════════════════$(NC)"
 	@if [ ! -f celo/.env ]; then \
 		echo "$(YELLOW)⚠️  No .env file found in celo/$(NC)"; \
@@ -113,9 +129,9 @@ verify-celo:
 	forge verify-contract \
 		$(CONTRACT_ADDRESS) \
 		src/ScholarFiVault.sol:ScholarFiVault \
-		--chain-id 44787 \
+		--chain-id 11142220 \
 		--etherscan-api-key $(shell grep CELOSCAN_API_KEY celo/.env | cut -d '=' -f2) \
-		--constructor-args $(shell cast abi-encode "constructor(address,string)" "0x68c931C9a534D37aa78094877F46fE46a49F1A51" "scholar-fi-v1")
+		--constructor-args $(shell cast abi-encode "constructor(address,string)" "0x16ECBA51e18a4a7e61fdC417f0d47AFEeDfbed74" "scholar-fi-v1")
 	@echo "$(GREEN)✓ Contract verified on Celoscan$(NC)"
 
 rofl:
