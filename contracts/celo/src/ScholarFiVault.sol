@@ -96,7 +96,7 @@ contract ScholarFiVault is SelfVerificationRoot {
 
     /**
      * @notice Deploy ScholarFiVault with Self age verification
-     * @param identityVerificationHubV2Address Self Hub V2 on Celo Alfajores: 0x68c931C9a534D37aa78094877F46fE46a49F1A51
+     * @param identityVerificationHubV2Address Self Hub V2 on Celo Sepolia: 0x16ECBA51e18a4a7e61fdC417f0d47AFEeDfbed74
      * @param scopeSeed Unique scope identifier (max 31 bytes ASCII, e.g., "scholar-fi-v1")
      */
     constructor(
