@@ -35,11 +35,11 @@ Save your private key somewhere safe (you'll need it for .env files).
 
 ## Get Testnet Tokens
 
-**Celo Alfajores**
+**Celo Sepolia**
 1. Go to https://faucet.celo.org
-2. Select Alfajores Testnet
+2. Select Sepolia Testnet
 3. Enter your address and request CELO
-4. Check balance: `cast balance YOUR_ADDRESS --rpc-url https://alfajores-forno.celo-testnet.org`
+4. Check balance: `cast balance YOUR_ADDRESS --rpc-url https://sepolia-forno.celo-testnet.org`
 
 **Oasis Sapphire**
 1. Go to https://faucet.testnet.oasis.io
@@ -60,13 +60,13 @@ Privy handles gas sponsorship (important for the track).
 4. Enable gas sponsorship:
    - Settings → Transaction Management → Gas Sponsorship
    - Turn on "Native Gas Sponsorship"
-   - Add Celo Alfajores chain
+   - Add Celo Sepolia chain
    - Set daily limit to $10
 
 5. Enable embedded wallets:
    - Settings → Embedded Wallets
    - Turn ON
-   - Select Celo Alfajores
+   - Select Celo Sepolia
 
 Save the App ID and Secret for frontend later.
 
@@ -82,9 +82,9 @@ cp .env.example .env
 Edit `celo/.env`:
 ```bash
 PRIVATE_KEY=0x...  # Your wallet private key
-CELO_RPC_URL=https://alfajores-forno.celo-testnet.org
+CELO_RPC_URL=https://sepolia-forno.celo-testnet.org
 CELOSCAN_API_KEY=...  # Get from celoscan.io/register
-SELF_HUB_V2=0x68c931C9a534D37aa78094877F46fE46a49F1A51  # Don't change
+SELF_HUB_V2=0x16ECBA51e18a4a7e61fdC417f0d47AFEeDfbed74  # Don't change
 ```
 
 **Oasis contracts:**
@@ -110,7 +110,7 @@ touch .env
 
 Edit `rofl/.env`:
 ```bash
-CELO_RPC_URL=https://alfajores-forno.celo-testnet.org
+CELO_RPC_URL=https://sepolia-forno.celo-testnet.org
 SAPPHIRE_TESTNET_RPC=https://testnet.sapphire.oasis.io
 SCHOLAR_FI_VAULT=0x...  # Fill after deploying
 CHILD_DATA_STORE=0x...  # Fill after deploying
@@ -149,7 +149,7 @@ Finished release [optimized]
 ## Checklist
 
 Before deploying:
-- Got CELO tokens on Alfajores
+- Got CELO tokens on Sepolia
 - Got TEST tokens on Sapphire
 - Created Privy account with gas sponsorship enabled
 - Set up all .env files
@@ -164,7 +164,7 @@ Before deploying:
 
 **"Forge not found"** - Run `foundryup`
 
-**"Privy gas sponsorship not working"** - Check Privy dashboard that it's ON for Celo Alfajores
+**"Privy gas sponsorship not working"** - Check Privy dashboard that it's ON for Celo Sepolia
 
 ## Next Steps
 
