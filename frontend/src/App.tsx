@@ -1,4 +1,8 @@
 import { useState } from "react";
+import { PrivyProvider } from '@privy-io/react-auth';
+import { WagmiProvider, createConfig, http } from 'wagmi';
+import { sapphire, sapphireTestnet } from 'wagmi/chains';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Welcome } from "./components/Welcome";
 import { Login } from "./components/Login";
 import { Register } from "./components/Register";
@@ -29,7 +33,18 @@ export type Screen =
   | "faq"
   | "addFunds";
 
-export default function App() {
+// Configuración de Wagmi para Oasis Sapphire
+const wagmiConfig = createConfig({
+  chains: [sapphireTestnet, sapphire],
+  transports: {
+    [sapphireTestnet.id]: http(),
+    [sapphire.id]: http(),
+  },
+});
+
+const queryClient = new QueryClient();
+
+function AppContent() {
   const [currentScreen, setCurrentScreen] = useState<Screen>("welcome");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -154,5 +169,33 @@ export default function App() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <PrivyProvider
+      appId="cmiaafkvf02z1jj0ce0vlo5ts"
+      config={{
+        loginMethods: ['email', 'wallet', 'google', 'apple'],
+        appearance: {
+          theme: 'light',
+          accentColor: '#8B5CF6',
+          logo: 'https://your-logo-url.com/logo.png',
+        },
+        embeddedWallets: {
+          createOnLogin: 'users-without-wallets',
+          requireUserPasswordOnCreate: false,
+        },
+        supportedChains: [sapphireTestnet, sapphire],
+        defaultChain: sapphireTestnet,
+      }}
+    >
+      <QueryClientProvider client={queryClient}>
+        <WagmiProvider config={wagmiConfig}>
+          <AppContent />
+        </WagmiProvider>
+      </QueryClientProvider>
+    </PrivyProvider>
   );
 }
