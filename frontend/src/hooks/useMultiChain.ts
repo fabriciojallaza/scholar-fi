@@ -10,8 +10,8 @@ import ChildDataStoreABI from "../abis/ChildDataStore.json";
 
 export interface MultiChainProviders {
   // Base Sepolia (Privy + gas sponsorship + deposits)
-  baseProvider: ethers.BrowserProvider | null;
-  baseSigner: ethers.JsonRpcSigner | null;
+  baseProvider: any | null;  // Privy provider (ethers v5 compatible)
+  baseSigner: any | null;
   splitterContract: ethers.Contract | null; // ParentDepositSplitter
 
   // Celo Sepolia (Self age verification)
@@ -55,8 +55,8 @@ export function useMultiChain(): MultiChainProviders {
     privyAvailable = false;
   }
 
-  const [baseProvider, setBaseProvider] = useState<ethers.BrowserProvider | null>(null);
-  const [baseSigner, setBaseSigner] = useState<ethers.JsonRpcSigner | null>(null);
+  const [baseProvider, setBaseProvider] = useState<any | null>(null);
+  const [baseSigner, setBaseSigner] = useState<any | null>(null);
   const [celoProvider, setCeloProvider] = useState<ethers.JsonRpcProvider | null>(null);
   const [oasisProvider, setOasisProvider] = useState<ethers.JsonRpcProvider | null>(null);
   const [address, setAddress] = useState<string | null>(null);
@@ -84,8 +84,9 @@ export function useMultiChain(): MultiChainProviders {
         await wallet.switchChain(CHAIN_CONFIG.baseSepolia.chainId);
 
         // Create ethers provider from Privy wallet
-        const provider = await wallet.getEthersProvider();
-        const ethersProvider = new ethers.BrowserProvider(provider);
+        // Note: getEthersProvider() already returns an ethers provider (v5 compatible)
+        // Don't wrap it in BrowserProvider - just use it directly
+        const ethersProvider = await wallet.getEthersProvider();
         const signer = await ethersProvider.getSigner();
         const userAddress = await signer.getAddress();
 
