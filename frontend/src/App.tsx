@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Welcome } from "./components/Welcome";
 import { Login } from "./components/Login";
-import { Register } from "./components/Register";
 import { ParentOnboarding } from "./components/ParentOnboarding";
 import { ParentDashboard } from "./components/ParentDashboard";
 import { SpendingControls } from "./components/SpendingControls";
@@ -14,17 +13,16 @@ import { FAQ } from "./components/FAQ";
 import { AddFunds } from "./components/AddFunds";
 import { BottomNav } from "./components/BottomNav";
 
-export type Screen = 
+export type Screen =
   | "welcome"
   | "login"
-  | "register"
-  | "onboarding" 
-  | "dashboard" 
-  | "spending" 
+  | "onboarding"
+  | "dashboard"
+  | "spending"
   | "merchants"
-  | "transaction" 
-  | "savings" 
-  | "teen" 
+  | "transaction"
+  | "savings"
+  | "teen"
   | "release"
   | "faq"
   | "addFunds";
@@ -38,19 +36,12 @@ export default function App() {
     setCurrentScreen("onboarding");
   };
 
-  const handleRegister = () => {
-    setIsAuthenticated(true);
-    setCurrentScreen("onboarding");
-  };
-
   const renderScreen = () => {
     switch (currentScreen) {
       case "welcome":
-        return <Welcome onLogin={() => setCurrentScreen("login")} onRegister={() => setCurrentScreen("register")} />;
+        return <Welcome onLogin={() => setCurrentScreen("login")} />;
       case "login":
-        return <Login onLogin={handleLogin} onSwitchToRegister={() => setCurrentScreen("register")} />;
-      case "register":
-        return <Register onRegister={handleRegister} onSwitchToLogin={() => setCurrentScreen("login")} />;
+        return <Login onLogin={handleLogin} onSwitchToRegister={() => {}} />;
       case "onboarding":
         return <ParentOnboarding onComplete={() => setCurrentScreen("dashboard")} />;
       case "dashboard":
@@ -72,11 +63,11 @@ export default function App() {
       case "addFunds":
         return <AddFunds onBack={() => setCurrentScreen("dashboard")} />;
       default:
-        return <Welcome onLogin={() => setCurrentScreen("login")} onRegister={() => setCurrentScreen("register")} />;
+        return <Welcome onLogin={() => setCurrentScreen("login")} />;
     }
   };
 
-  const showBottomNav = isAuthenticated && !["welcome", "login", "register", "onboarding", "teen", "release"].includes(currentScreen);
+  const showBottomNav = isAuthenticated && !["welcome", "login", "onboarding", "teen", "release"].includes(currentScreen);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-orange-50 to-indigo-50">

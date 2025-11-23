@@ -79,14 +79,15 @@ export function PrivyProvider({ children }: PrivyProviderProps) {
           logo: "/logo.png",
         },
 
-        // Embedded wallets
+        // Embedded wallets - automatically create for all users
         embeddedWallets: {
-          createOnLogin: "users-without-wallets",
+          createOnLogin: "all-users", // Create wallet for everyone
           requireUserPasswordOnCreate: false,
+          noPromptOnSignature: false,
         },
 
-        // Supported login methods
-        loginMethods: ["email", "wallet"],
+        // Supported login methods - email only with OTP
+        loginMethods: ["email"],
 
         // Default chain for wallet creation
         defaultChain: baseSepolia,

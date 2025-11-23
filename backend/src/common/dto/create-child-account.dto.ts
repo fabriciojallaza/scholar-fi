@@ -1,7 +1,16 @@
+import { IsString, IsNumber, IsEmail } from 'class-validator';
+
 export class CreateChildAccountDto {
+  @IsString()
   parentUserId: string;      // Privy user ID (e.g., did:privy:abc123)
+
+  @IsString()
   childName: string;
+
+  @IsNumber()
   childDateOfBirth: number;  // Unix timestamp
+
+  @IsEmail()
   parentEmail: string;
 }
 

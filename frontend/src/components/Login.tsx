@@ -179,16 +179,10 @@ export function Login({ onLogin, onSwitchToRegister }: LoginProps) {
           </div>
         </div>
 
-        {/* Register Link */}
+        {/* Info text */}
         <div className="mt-8 text-center">
-          <p className="text-gray-600">
-            Don't have an account?{" "}
-            <button
-              onClick={onSwitchToRegister}
-              className="text-purple-600 hover:text-purple-700"
-            >
-              Create Account
-            </button>
+          <p className="text-sm text-gray-500">
+            New users will automatically be registered on first login
           </p>
         </div>
       </motion.div>

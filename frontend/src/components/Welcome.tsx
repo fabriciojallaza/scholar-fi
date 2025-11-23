@@ -13,10 +13,9 @@ import { ImageWithFallback } from "./figma/ImageWithFallback";
 
 interface WelcomeProps {
   onLogin: () => void;
-  onRegister: () => void;
 }
 
-export function Welcome({ onLogin, onRegister }: WelcomeProps) {
+export function Welcome({ onLogin }: WelcomeProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const slides = [
@@ -166,19 +165,15 @@ export function Welcome({ onLogin, onRegister }: WelcomeProps) {
           onClick={onLogin}
           className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white py-6 rounded-2xl shadow-lg flex items-center justify-center gap-2"
         >
-          <span>Sign In</span>
+          <span>Get Started</span>
           <ChevronRight className="w-5 h-5" />
         </Button>
 
-        <Button
-          onClick={onRegister}
-          className="w-full bg-white hover:bg-purple-50 text-purple-600 py-6 rounded-2xl border-2 border-purple-200 transition-colors shadow-sm flex items-center justify-center gap-2"
-        >
-          <span>Create Account</span>
-          <ChevronRight className="w-5 h-5" />
-        </Button>
+        <p className="text-center text-xs text-gray-400 pt-4">
+          Login with email - new users will be registered automatically
+        </p>
 
-        <p className="text-center text-xs text-gray-500 pt-2">
+        <p className="text-center text-xs text-gray-500 pt-4">
           By continuing, you agree to our Terms of Service and Privacy Policy
         </p>
       </motion.div>

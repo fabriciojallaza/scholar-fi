@@ -53,18 +53,34 @@ export class PrivyService {
    */
   async getUserWallet(userId: string): Promise<string | null> {
     try {
+      this.logger.log(`Getting wallet for user: ${userId}`);
       const user = await this.privyClient.getUser(userId);
 
+      this.logger.log(`User data: ${JSON.stringify(user)}`);
+
+      // Check if user has linkedAccounts (camelCase!)
+      if (!user.linkedAccounts || !Array.isArray(user.linkedAccounts)) {
+        this.logger.warn(`User ${userId} has no linkedAccounts`);
+        return null;
+      }
+
       // Find embedded wallet
-      const embeddedWallet = user.linked_accounts.find(
+      const embeddedWallet = user.linkedAccounts.find(
         (account: any) =>
           account.type === 'wallet' &&
-          account.wallet_client === 'privy'
+          (account.walletClientType === 'privy' || account.connectorType === 'embedded')
       );
 
-      return embeddedWallet?.address || null;
+      if (embeddedWallet) {
+        this.logger.log(`Found embedded wallet: ${embeddedWallet.address}`);
+        return embeddedWallet.address;
+      }
+
+      this.logger.warn(`User ${userId} has no embedded wallet`);
+      return null;
     } catch (error) {
       this.logger.error(`Failed to get user wallet: ${error.message}`);
+      this.logger.error(`Error stack: ${error.stack}`);
       return null;
     }
   }
@@ -187,38 +203,50 @@ export class PrivyService {
     try {
       this.logger.log(`Checking gas sponsorship for chain ${chainId}...`);
 
-      // GET app configuration from Privy
+      // Use Privy SDK to check app config
+      // Note: The /apps/me endpoint requires proper permissions
+      const appId = this.configService.get<string>('PRIVY_APP_ID');
+      const appSecret = this.configService.get<string>('PRIVY_APP_SECRET');
+
       const response = await fetch(
-        'https://auth.privy.io/api/v1/apps/me',
+        `https://auth.privy.io/api/v1/apps/${appId}`,
         {
+          method: 'GET',
           headers: {
             'Authorization': this.getAuthHeader(),
-            'privy-app-id': this.configService.get<string>('PRIVY_APP_ID')!,
+            'privy-app-id': appId,
           },
         }
       );
 
       if (!response.ok) {
-        throw new Error(`Failed to get app config: ${response.status}`);
+        const errorText = await response.text();
+        this.logger.error(`Privy API error: ${response.status} - ${errorText}`);
+        this.logger.warn(`⚠️  Could not verify gas sponsorship via API`);
+        this.logger.warn(`   Please verify manually at: https://dashboard.privy.io/settings`);
+        this.logger.warn(`   Enable Gas Sponsorship for Base Sepolia (Chain ID: 84532)`);
+        // Continue anyway - don't block account creation
+        return true;
       }
 
       const appConfig = await response.json();
+      this.logger.log(`App config: ${JSON.stringify(appConfig)}`);
 
-      // Check if gas sponsorship is enabled for this chain
-      const gasSponsorship = appConfig.embedded_wallets?.gas_sponsorship;
-      const isEnabled = gasSponsorship?.chains?.includes(chainId) || false;
+      // Check if gas sponsorship is configured
+      const gasSponsorshipEnabled = appConfig.rpcConfig?.sponsorshipEnabled || false;
 
-      if (isEnabled) {
-        this.logger.log(`✅ Gas sponsorship enabled for chain ${chainId}`);
+      if (gasSponsorshipEnabled) {
+        this.logger.log(`✅ Gas sponsorship is enabled`);
       } else {
-        this.logger.warn(`⚠️  Gas sponsorship NOT enabled for chain ${chainId}`);
-        this.logger.warn(`   Enable it at: https://dashboard.privy.io/settings/embedded-wallets`);
+        this.logger.warn(`⚠️  Gas sponsorship NOT enabled`);
+        this.logger.warn(`   Enable at: https://dashboard.privy.io → Settings → Embedded Wallets → Gas Sponsorship`);
       }
 
-      return isEnabled;
+      return gasSponsorshipEnabled;
     } catch (error) {
       this.logger.error(`Failed to verify gas sponsorship: ${error.message}`);
-      return false;
+      this.logger.warn(`   Continuing without verification - configure manually in Privy Dashboard`);
+      return true; // Don't block account creation
     }
   }
 

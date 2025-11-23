@@ -51,27 +51,38 @@ export function ParentOnboarding({ onComplete }: ParentOnboardingProps) {
     // Convert date of birth to Unix timestamp
     const dobTimestamp = new Date(childDateOfBirth).getTime() / 1000;
 
+    const requestBody = {
+      parentUserId: user.id,
+      childName,
+      childDateOfBirth: dobTimestamp,
+      parentEmail,
+    };
+
+    console.log('📤 Sending to backend:', requestBody);
+
     try {
       setIsCreating(true);
       setError(null);
 
-      // Call serverless API to create child account
-      const response = await fetch('/api/create-child-account', {
+      // Call backend API to create child account
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+      const response = await fetch(`${backendUrl}/api/child-account/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          parentUserId: user.id,
-          childName,
-          childDateOfBirth: dobTimestamp,
-          parentEmail,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create child account');
+        let errorMessage = 'Failed to create child account';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          errorMessage = `Backend error: ${response.status} ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
