@@ -60,13 +60,6 @@ make deploy-all
 
 Dependencies aren't committed, so run `make install` after cloning.
 
-## Docs
-
-- [INSTALLATION.md](./docs/INSTALLATION.md) - Dependency setup
-- [SETUP.md](./docs/SETUP.md) - Wallets and environment config
-- [DEPLOYMENT.md](./docs/DEPLOYMENT.md) - Deployment steps
-- [TRACK_COMPLIANCE.md](./docs/TRACK_COMPLIANCE.md) - Track requirements
-
 ## ETHGlobal tracks
 
 **Privy** - Native gas sponsorship for all transactions (create account, deposit, payments)

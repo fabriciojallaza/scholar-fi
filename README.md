@@ -30,7 +30,7 @@ We're using Base Sepolia, Celo Sepolia, and Oasis Sapphire. Each one does someth
 
 ### Chain communication
 
-Base and Celo talk to each other through Hyperlane for cross-chain messaging. When you deposit on Base, theoretically you could send a message to Celo to update balances there (though in our current setup, we just handle this via Oasis as the source of truth).
+The chains operate independently - deposits happen on Base, age verification on Celo, and data storage on Oasis. Cross-chain coordination is handled by the backend server which interacts with all three chains via ethers.js. We initially explored Hyperlane for direct chain-to-chain messaging but decided a centralized backend coordination layer was simpler and more reliable for this use case.
 
 ## Sponsor integrations
 
@@ -79,29 +79,16 @@ The parent address has read access via the `onlyParent` modifier. Everyone else 
 
 Contract: `contracts/oasis/src/ChildDataStore.sol`
 
-### Hyperlane - Cross-chain messaging
-
-We use Hyperlane to pass messages between Base and Celo. The setup is:
-
-- Base: `IMailbox.dispatch()` sends messages with a destination domain and recipient
-- Celo: Our contract implements `handle()` to receive messages
-- TypeCasts library converts between bytes32 and addresses
-
-Currently we have the infrastructure set up but don't actively send cross-chain messages in the main flow (deposits stay on Base, verification happens on Celo independently). But the plumbing is there if we wanted to notify Celo about deposits or vice versa.
-
-Mailboxes:
-- Base Sepolia: `0x6966b0E55883d49BFB24539356a2f8A673E02039`
-- Celo Sepolia: `0xD0680F80F4f947968206806C2598Cbc5b6FE5b03`
 
 ## Tech stack
 
-**Frontend**: React + Vite + TypeScript, Privy React SDK for auth
+**Frontend**: React + Vite + TypeScript, Privy React SDK for auth, Self Protocol SDK for age verification UI
 
-**Backend**: NestJS with Privy server SDK, ethers.js for contract calls
+**Backend**: NestJS with Privy server SDK, ethers.js for contract interactions across all three chains
 
-**Contracts**: Foundry (Solidity 0.8.24 for Base, 0.8.28 for Celo because Self requires it, ^0.8.0 for Oasis)
+**Contracts**: Foundry (Solidity 0.8.24 for Base, 0.8.28 for Celo because Self Protocol requires it, ^0.8.0 for Oasis)
 
-**Monitoring**: Rust ROFL service (runs in Oasis's off-chain runtime) that monitors Celo vault balances and updates growth metrics
+**Deployment**: Frontend on Vercel, Backend on Vercel (configured as serverless functions)
 
 ## Project structure
 
@@ -109,16 +96,18 @@ Mailboxes:
 scholar-fi/
 ├── contracts/          # Foundry projects for all 3 chains
 │   ├── base/          # ParentDepositSplitter (70/30 split logic)
-│   ├── celo/          # ScholarFiAgeVerifier (Self integration)
-│   ├── oasis/         # ChildDataStore (encrypted profiles)
-│   └── rofl/          # Rust monitoring service
-├── backend/           # NestJS API server
+│   ├── celo/          # ScholarFiAgeVerifier (Self Protocol integration)
+│   └── oasis/         # ChildDataStore (encrypted profiles)
+├── backend/           # NestJS API server (deployed to Vercel)
+│   ├── api/           # Vercel serverless entry point
 │   ├── src/modules/privy/      # Privy SDK integration
-│   ├── src/modules/blockchain/ # Contract interactions
-│   └── src/modules/webhooks/   # Event listeners
-└── frontend/          # React app
+│   ├── src/modules/blockchain/ # Multi-chain contract interactions
+│   ├── src/modules/child-account/ # Account creation flow
+│   └── src/modules/webhooks/   # Event listeners (Privy webhooks)
+└── frontend/          # React app (deployed to Vercel)
     ├── src/components/ # UI components
-    └── api/           # (deprecated, moved to backend)
+    ├── src/hooks/     # Custom hooks (useSelfVerification, wallet management)
+    └── src/config/    # Chain and contract configurations
 ```
 
 ## Deployment addresses
@@ -145,21 +134,24 @@ make deploy-all     # Deploy to all chains
 make export-abis    # Export ABIs to frontend
 ```
 
-See `contracts/CLAUDE.md` for detailed deployment instructions.
-
 ### Backend
 
 ```bash
 cd backend
 npm install
 cp .env.example .env
-# Edit .env with Privy credentials and contract addresses
+# Edit .env with:
+#   - Privy App ID and App Secret
+#   - Contract addresses (Base, Celo, Oasis)
+#   - RPC URLs for all three chains
+#   - Private key for contract interactions
 npm run dev
 ```
 
-Backend runs on port 3001. See `backend/SETUP_GUIDE.md` for complete setup.
-
-**Important**: You need to enable gas sponsorship in Privy dashboard and fund the gas tank before deposits will work gaslessly.
+**Important**:
+- Enable gas sponsorship in Privy dashboard and fund the gas tank before deposits will work gaslessly
+- For production deployment to Vercel, set all environment variables in Vercel dashboard
+- Backend uses NestJS configured as Vercel serverless functions via `api/index.ts`
 
 ### Frontend
 
@@ -167,60 +159,69 @@ Backend runs on port 3001. See `backend/SETUP_GUIDE.md` for complete setup.
 cd frontend
 npm install
 cp .env.example .env
-# Edit .env with Privy App ID and contract addresses
+# Edit .env with:
+#   - VITE_PRIVY_APP_ID (from Privy dashboard)
+#   - VITE_BACKEND_URL (backend URL, no trailing slash)
+#   - Contract addresses for all three chains
 npm run dev
 ```
 
-Frontend runs on port 5173.
+Frontend runs on port 3000 locally (Vite dev server).
+
+**For Vercel deployment:**
+- Set `VITE_BACKEND_URL` without trailing slash (e.g., `https://your-backend.vercel.app`)
+- Add all `VITE_*` environment variables in Vercel dashboard
+- Vercel will auto-detect Vite and build correctly
 
 ## Key files to understand
 
 If you're trying to understand how everything connects:
 
-1. `contracts/base/src/ParentDepositSplitter.sol` - The 70/30 split logic
-2. `contracts/celo/src/ScholarFiAgeVerifier.sol` - Self Protocol integration, see `customVerificationHook()`
-3. `contracts/oasis/src/ChildDataStore.sol` - Encrypted storage, check the `ChildProfile` struct
-4. `backend/src/modules/child-account/child-account.service.ts` - Full account creation flow
-5. `backend/src/modules/webhooks/webhooks.service.ts` - How we detect verification events and update policies
-6. `frontend/src/hooks/useMultiChain.ts` - How frontend talks to all three chains
+1. `contracts/base/src/ParentDepositSplitter.sol` - The 70/30 split logic for deposits
+2. `contracts/celo/src/ScholarFiAgeVerifier.sol` - Self Protocol integration with `customVerificationHook()` and address parsing
+3. `contracts/oasis/src/ChildDataStore.sol` - Encrypted storage with TEE, check the `ChildProfile` struct
+4. `backend/src/modules/child-account/child-account.service.ts` - Full multi-chain account creation flow
+5. `backend/src/modules/blockchain/blockchain.service.ts` - Multi-chain contract interactions using ethers.js
+6. `frontend/src/hooks/useSelfVerification.ts` - Self Protocol SDK integration for age verification UI
+7. `frontend/src/components/ParentOnboarding.tsx` - Main account creation flow and backend API calls
 
-## Known limitations
+## Known limitations and future improvements
 
-- Wallet private keys are currently just logged by the backend (need proper secure storage like AWS KMS)
-- Privy user IDs are temporarily stored as JSON in the email field on Oasis (should be separate struct fields)
-- Block tracking for webhook is in-memory (resets on restart, should use Redis)
-- Email notifications are placeholders (need SendGrid/Postmark integration)
-- ROFL service monitoring is not active yet (code exists but not deployed)
+- **Privy SDK on Vercel**: The `@privy-io/server-auth` package has deep dependencies (`@hpke/common`) that don't bundle well with Vercel's serverless functions. Currently exploring workarounds or may need to migrate backend to Railway/Render.
+- **Wallet key management**: Private keys are logged by backend during development. Production needs proper secure storage (AWS KMS, HashiCorp Vault, or Privy's managed wallets).
+- **Child data structure**: Privy user IDs stored as JSON strings in email field on Oasis contract - should be separate struct fields.
+- **Event monitoring**: Block tracking for Privy webhooks is in-memory (resets on restart) - needs persistent storage like Redis or database.
+- **Notifications**: Email notifications are placeholder console.logs - need integration with SendGrid/Postmark.
+- **Self Protocol limitations**: Requires mock passports on testnet (`staging_celo` endpoint), real NFC passports needed for mainnet.
 
 ## Testing the full flow
 
-1. Start backend: `cd backend && npm run dev`
-2. Start frontend: `cd frontend && npm run dev`
-3. Login as parent with email (Privy creates embedded wallet)
-4. Create child account (backend handles all 3 chain registrations)
-5. Deposit ETH (should be gasless if you configured Privy)
-6. Wait for deposit to confirm
-7. Check Oasis profile to see encrypted data
-8. (For age verification, you'd need actual Self Protocol integration via their mobile app)
+### Local development:
+1. Start backend: `cd backend && npm run dev` (runs on port 3001)
+2. Start frontend: `cd frontend && npm run dev` (runs on port 3000)
+3. Login as parent with email (Privy creates embedded wallet automatically)
+4. Create child account (backend registers on all 3 chains: Base, Celo, Oasis)
+5. Deposit ETH on Base (gasless if Privy gas sponsorship is configured and funded)
+6. Wait for transaction confirmation
+7. View child profile (encrypted data stored on Oasis)
+8. Test age verification flow:
+   - Click "Unlock at age 18" button in Manage tab
+   - Scan QR code with Self Protocol mobile app
+   - Submit passport proof (use mock passport on testnet)
+   - Backend detects verification and updates wallet policies
 
-## ETHGlobal tracks
+### Production (Vercel):
+- Frontend: https://scholar-fi-frontend.vercel.app
+- Backend: https://scholar-fi.vercel.app
+- Make sure all environment variables are set in both Vercel projects
+
+## ETHGlobal sponsor integrations
 
 This project was built for ETHGlobal and integrates:
-- Privy (gas sponsorship + embedded wallets)
-- Self Protocol (ZK age verification)
-- Oasis Sapphire (confidential compute)
-- Hyperlane (cross-chain messaging)
+- **Privy**: Gas sponsorship on Base + embedded wallet management + multi-signer policies
+- **Self Protocol**: Zero-knowledge passport age verification on Celo with direct on-chain integration
+- **Oasis Sapphire**: Confidential TEE-based storage for encrypted child profiles
 
-See `docs/TRACK_COMPLIANCE.md` for detailed track requirement proof.
-
-## Documentation
-
-- `contracts/CLAUDE.md` - Contract architecture, deployment, testing
-- `backend/README.md` - Backend API documentation
-- `backend/SETUP_GUIDE.md` - Step-by-step backend setup
-- `PRIVY_SUMMARY.md` - Privy integration details and troubleshooting
-- `COMPLETE_FLOW.md` - Line-by-line code walkthrough of entire system
-- `BACKEND_IMPLEMENTATION_SUMMARY.md` - What was implemented and what's left
 
 ## License
 
@@ -228,6 +229,15 @@ MIT
 
 ## Built for ETHGlobal
 
-This was built during an ETHGlobal hackathon. Some parts are production-ready, others are proof-of-concept. The smart contracts are tested and working. The backend needs some hardening (key storage, database, email). The frontend works but could use more error handling.
+This was built during an ETHGlobal hackathon. The smart contracts are fully tested and deployed. The backend multi-chain coordination works but needs production hardening (key management, persistent storage, proper error handling). The frontend is functional with Self Protocol age verification flow integrated.
 
-If you're judging this: the interesting parts are the Self Protocol integration for age verification and how we handle the multi-chain coordination with Privy's policies API. The Oasis integration is straightforward but the automatic encryption is pretty convenient.
+**Notable technical achievements:**
+1. **Self Protocol on-chain integration**: Direct smart contract verification with custom userDefinedData parsing to handle Self's UTF-8 string encoding
+2. **Multi-chain coordination**: Backend orchestrates contract calls across Base (deposits), Celo (age verification), and Oasis (encrypted storage)
+3. **Gasless UX**: Privy's gas sponsorship makes deposits work without users needing testnet ETH
+4. **TEE-based encryption**: Oasis Sapphire provides automatic encryption without custom crypto code
+
+**Key integration challenges solved:**
+- Self Protocol's `endpointType` must be `'staging_celo'` not `'celo-staging'` (found by reading SDK source)
+- userDefinedData encoding: Self converts strings to UTF-8 bytes, requiring custom hex parsing in Solidity
+- Vercel serverless: Privy SDK dependencies (`@hpke/common`) have bundling issues on Vercel (ongoing)
