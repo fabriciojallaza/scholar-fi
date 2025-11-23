@@ -35,7 +35,7 @@ export default async function handler(
     console.log('🔍 Checking Celo for ChildVerified events...');
 
     // Step 1: Connect to Celo Sepolia
-    const provider = new ethers.JsonRpcProvider(process.env.VITE_CELO_SEPOLIA_RPC);
+    const provider = new ethers.JsonRpcProvider(process.env.CELO_RPC_URL);
     const verifierAddress = process.env.VITE_CELO_VERIFIER_ADDRESS;
 
     if (!verifierAddress) {
@@ -188,7 +188,7 @@ async function updatePrivyPolicy(childAddress: string, parentAddress: string): P
  */
 async function updateOasisVerification(childAddress: string): Promise<boolean> {
   try {
-    const provider = new ethers.JsonRpcProvider(process.env.VITE_OASIS_SAPPHIRE_RPC);
+    const provider = new ethers.JsonRpcProvider(process.env.SAPPHIRE_TESTNET_RPC);
     const signer = new ethers.Wallet(process.env.DEPLOYER_PRIVATE_KEY!, provider);
 
     const datastoreAddress = process.env.VITE_OASIS_DATASTORE_ADDRESS;
@@ -213,7 +213,7 @@ async function updateOasisVerification(childAddress: string): Promise<boolean> {
  */
 async function getChildUserIdFromOasis(childAddress: string): Promise<string | null> {
   try {
-    const provider = new ethers.JsonRpcProvider(process.env.VITE_OASIS_SAPPHIRE_RPC);
+    const provider = new ethers.JsonRpcProvider(process.env.SAPPHIRE_TESTNET_RPC);
     const datastoreAddress = process.env.VITE_OASIS_DATASTORE_ADDRESS;
 
     const datastoreAbi = [

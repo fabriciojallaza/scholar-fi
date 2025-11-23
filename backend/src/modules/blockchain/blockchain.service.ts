@@ -51,12 +51,28 @@ export class BlockchainService {
   /**
    * Register child on Celo Sepolia ScholarFiAgeVerifier
    */
+  /**
+   * Get current contract addresses (for validation)
+   */
+  getVerifierAddress(): string {
+    return this.configService.get<string>('CELO_VERIFIER_ADDRESS')!;
+  }
+
+  getSplitterAddress(): string {
+    return this.configService.get<string>('BASE_SPLITTER_ADDRESS')!;
+  }
+
+  getDatastoreAddress(): string {
+    return this.configService.get<string>('OASIS_DATASTORE_ADDRESS')!;
+  }
+
   async registerOnCelo(
     childAddress: string,
     parentAddress: string
   ): Promise<boolean> {
     try {
-      this.logger.log(`Registering child on Celo: ${childAddress}`);
+      const verifierAddress = this.getVerifierAddress();
+      this.logger.log(`Registering child on Celo: ${childAddress} to contract: ${verifierAddress}`);
 
       const provider = new ethers.JsonRpcProvider(
         this.configService.get<string>('CELO_SEPOLIA_RPC'),
@@ -70,12 +86,11 @@ export class BlockchainService {
         provider
       );
 
-      const verifierAddress = this.configService.get<string>('CELO_VERIFIER_ADDRESS');
       const verifierAbi = [
         'function registerChild(address childAddress, address parentAddress) external'
       ];
 
-      const verifier = new ethers.Contract(verifierAddress!, verifierAbi, signer);
+      const verifier = new ethers.Contract(verifierAddress, verifierAbi, signer);
       const tx = await verifier.registerChild(childAddress, parentAddress);
       await tx.wait();
 

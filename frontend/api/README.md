@@ -96,19 +96,19 @@ DEPLOYER_PRIVATE_KEY=0x...
 
 ### Base Sepolia
 ```
-VITE_BASE_SEPOLIA_RPC=https://sepolia.base.org
+BASE_SEPOLIA=https://sepolia.base.org
 VITE_BASE_SPLITTER_ADDRESS=0x...
 ```
 
 ### Celo Sepolia
 ```
-VITE_CELO_SEPOLIA_RPC=https://celo-sepolia-rpc.publicnode.com
+CELO_RPC_URL=https://forno.celo-sepolia.celo-testnet.org
 VITE_CELO_VERIFIER_ADDRESS=0x...
 ```
 
 ### Oasis Sapphire
 ```
-VITE_OASIS_SAPPHIRE_RPC=https://testnet.sapphire.oasis.io
+SAPPHIRE_TESTNET_RPC=https://testnet.sapphire.oasis.io
 VITE_OASIS_DATASTORE_ADDRESS=0x...
 ```
 

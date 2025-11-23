@@ -89,6 +89,21 @@ export function ParentOnboarding({ onComplete }: ParentOnboardingProps) {
 
       console.log('✅ Child account created:', data);
 
+      // Validate contract addresses match frontend config
+      if (data.contractAddresses) {
+        const expectedCelo = import.meta.env.VITE_CELO_VERIFIER_ADDRESS;
+        const actualCelo = data.contractAddresses.celoVerifier;
+
+        if (expectedCelo && actualCelo && expectedCelo.toLowerCase() !== actualCelo.toLowerCase()) {
+          console.warn(`⚠️  Contract address mismatch!`);
+          console.warn(`   Frontend expects: ${expectedCelo}`);
+          console.warn(`   Backend used: ${actualCelo}`);
+          console.warn(`   This child was registered on: ${actualCelo}`);
+        } else {
+          console.log(`✅ Contract addresses match: ${actualCelo}`);
+        }
+      }
+
       // Store child account data in localStorage
       localStorage.setItem('childAccountData', JSON.stringify({
         childName,

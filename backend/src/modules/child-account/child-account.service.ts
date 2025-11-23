@@ -128,6 +128,12 @@ export class ChildAccountService {
         oasisProfileCreated,
         celoRegistered,
         baseRegistered,
+        // Include contract addresses so frontend can validate
+        contractAddresses: {
+          celoVerifier: this.blockchainService.getVerifierAddress(),
+          baseSplitter: this.blockchainService.getSplitterAddress(),
+          oasisDatastore: this.blockchainService.getDatastoreAddress(),
+        },
         message: 'Child account created with checking and vault wallets (child as additional signer)',
       };
     } catch (error) {

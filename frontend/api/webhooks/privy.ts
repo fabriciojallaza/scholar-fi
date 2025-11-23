@@ -112,7 +112,7 @@ function verifySignature(payload: string, signature: string, secret: string): bo
  */
 async function findChildByWallet(walletAddress: string): Promise<string | null> {
   try {
-    const provider = new ethers.JsonRpcProvider(process.env.VITE_OASIS_SAPPHIRE_RPC);
+    const provider = new ethers.JsonRpcProvider(process.env.SAPPHIRE_TESTNET_RPC);
     const datastoreAddress = process.env.VITE_OASIS_DATASTORE_ADDRESS;
 
     const datastoreAbi = [
@@ -140,7 +140,7 @@ async function findChildByWallet(walletAddress: string): Promise<string | null> 
  */
 async function recordDepositOnOasis(childAddress: string, depositAmount: bigint): Promise<boolean> {
   try {
-    const provider = new ethers.JsonRpcProvider(process.env.VITE_OASIS_SAPPHIRE_RPC);
+    const provider = new ethers.JsonRpcProvider(process.env.SAPPHIRE_TESTNET_RPC);
     const signer = new ethers.Wallet(process.env.DEPLOYER_PRIVATE_KEY!, provider);
 
     const datastoreAddress = process.env.VITE_OASIS_DATASTORE_ADDRESS;

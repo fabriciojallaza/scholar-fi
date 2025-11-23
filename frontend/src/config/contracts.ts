@@ -7,7 +7,7 @@ export const CHAIN_CONFIG = {
   baseSepolia: {
     chainId: 84532,
     name: "Base Sepolia",
-    rpcUrl: import.meta.env.VITE_BASE_SEPOLIA_RPC || "https://sepolia.base.org",
+    rpcUrl: import.meta.env.BASE_SEPOLIA || "https://sepolia.base.org",
     explorer: "https://sepolia.basescan.org",
     nativeCurrency: {
       name: "ETH",
@@ -18,7 +18,7 @@ export const CHAIN_CONFIG = {
   celoSepolia: {
     chainId: 11142220,
     name: "Celo Sepolia",
-    rpcUrl: import.meta.env.VITE_CELO_SEPOLIA_RPC || "https://celo-sepolia-rpc.publicnode.com",
+    rpcUrl: import.meta.env.CELO_RPC_URL || "https://forno.celo-sepolia.celo-testnet.org",
     explorer: "https://sepolia.celoscan.io",
     verifierAddress: import.meta.env.VITE_CELO_VERIFIER_ADDRESS || "0xa4Ca603a1BEb03F1C11bdeA90227855f67DFf796",
     nativeCurrency: {
@@ -30,7 +30,7 @@ export const CHAIN_CONFIG = {
   oasisSapphire: {
     chainId: 23295,
     name: "Oasis Sapphire Testnet",
-    rpcUrl: import.meta.env.VITE_OASIS_SAPPHIRE_RPC || "https://testnet.sapphire.oasis.io",
+    rpcUrl: import.meta.env.SAPPHIRE_TESTNET_RPC || "https://testnet.sapphire.oasis.io",
     explorer: "https://explorer.oasis.io/testnet/sapphire",
     nativeCurrency: {
       name: "TEST",

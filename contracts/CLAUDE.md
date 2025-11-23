@@ -115,7 +115,7 @@ Each folder needs `.env` (copy from `.env.example`):
 
 **Celo** (`celo/.env`):
 - `PRIVATE_KEY` - Deployer wallet
-- `CELO_RPC_URL` - Default: https://celo-sepolia-rpc.publicnode.com
+- `CELO_RPC_URL` - Default: https://forno.celo-sepolia.celo-testnet.org
 - `SELF_HUB_V2` - `0x16ECBA51e18a4a7e61fdC417f0d47AFEeDfbed74` (DO NOT CHANGE)
 - `HYPERLANE_MAILBOX` - `0xD0680F80F4f947968206806C2598Cbc5b6FE5b03`
 - `BASE_BRIDGE_ADDRESS` - Fill after Base deployment

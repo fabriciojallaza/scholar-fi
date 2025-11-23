@@ -112,7 +112,7 @@ make rofl           # Run monitoring service
 ## Networks
 
 **Celo Sepolia Testnet**
-- RPC: https://celo-sepolia-rpc.publicnode.com
+- RPC: https://forno.celo-sepolia.celo-testnet.org
 - Chain ID: 11142220
 - Explorer: https://sepolia.celoscan.io
 - Faucet: https://faucet.celo.org/celo-sepolia
