@@ -127,7 +127,7 @@ scholar-fi/
 - ParentDepositSplitter: `0x9eC1c21F18a24319C2071603B04E38117C30eecA`
 
 **Celo Sepolia**
-- ScholarFiAgeVerifier: `0x181A6c2359A39628415aB91bD99306c2927DfAb9`
+- ScholarFiAgeVerifier: `0xa4Ca603a1BEb03F1C11bdeA90227855f67DFf796`
 
 **Oasis Sapphire Testnet**
 - ChildDataStore: `0x0D045460DBfE3A17DD2eA21f4c4cA193a1deF25E`

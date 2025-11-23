@@ -31,26 +31,20 @@ export function useSelfVerification({ childAddress, endpoint }: UseSelfVerificat
     const checksummedAddress = ethers.getAddress(childAddress);
     console.log('Initializing verification for address:', checksummedAddress);
 
-    // CRITICAL: Self Protocol converts string → bytes in contract
-    // Our contract does: abi.decode(userData, (address))
-    // So we need to pass the FULL ABI-encoded data WITH 0x prefix as a string
-    // The SDK will convert this hex string to bytes, which abi.decode can then parse
-    const encodedAddress = ethers.AbiCoder.defaultAbiCoder().encode(
-      ['address'],
-      [checksummedAddress]
-    );
-
-    // Pass the complete hex string (WITH 0x) so Self Protocol can convert it to proper bytes
-    const userDefinedData = encodedAddress;
+    // CRITICAL: Self Protocol converts the STRING to UTF-8 bytes
+    // If we pass "0x1234...", it converts the ASCII characters to bytes
+    // So we pass JUST the address (no 0x prefix, lowercase)
+    // The contract will receive the address as a hex string in bytes format
+    const userDefinedData = checksummedAddress.slice(2).toLowerCase();
 
     // Get verifier contract address from environment variables (via CHAIN_CONFIG)
-    const verifierAddress = (endpoint || CHAIN_CONFIG.celoSepolia.verifierAddress || '0x181A6c2359A39628415aB91bD99306c2927DfAb9').toLowerCase();
+    const verifierAddress = (endpoint || CHAIN_CONFIG.celoSepolia.verifierAddress || '0xa4Ca603a1BEb03F1C11bdeA90227855f67DFf796').toLowerCase();
 
     // Debug logging
     console.log('🔍 Self Protocol Configuration:', {
       appName: 'Scholar-Fi',
       scope: 'scholar-fi-v1',
-      endpointType: 'celo-staging',
+      endpointType: 'staging_celo',
       endpoint: verifierAddress,
       userId: checksummedAddress,
       userIdType: 'hex',
@@ -70,7 +64,7 @@ export function useSelfVerification({ childAddress, endpoint }: UseSelfVerificat
     const app = new SelfAppBuilder({
       appName: 'Scholar-Fi',
       scope: 'scholar-fi-v1', // Must match contract scopeSeed
-      endpointType: 'celo-staging', // Direct on-chain verification on Celo Sepolia (REQUIRES MOCK PASSPORT)
+      endpointType: 'staging_celo', // Direct on-chain verification on Celo Sepolia (REQUIRES MOCK PASSPORT)
       endpoint: verifierAddress, // ScholarFiAgeVerifier contract from env (MUST be lowercase)
       userId: checksummedAddress, // Use checksummed child address as user ID
       userIdType: 'hex', // REQUIRED: Specify that userId is an Ethereum address

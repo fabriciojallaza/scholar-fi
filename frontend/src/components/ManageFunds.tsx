@@ -137,7 +137,7 @@ export function ManageFunds({ onBack }: ManageFundsProps) {
         // Connect to Celo Sepolia for direct on-chain verification
         const celoProvider = new ethers.JsonRpcProvider(CHAIN_CONFIG.celoSepolia.rpcUrl);
 
-        const VERIFIER_ADDRESS = CHAIN_CONFIG.celoSepolia.verifierAddress || "0x181A6c2359A39628415aB91bD99306c2927DfAb9";
+        const VERIFIER_ADDRESS = CHAIN_CONFIG.celoSepolia.verifierAddress || "0xa4Ca603a1BEb03F1C11bdeA90227855f67DFf796";
         const VERIFIER_ABI = [
           "function isChildVerified(address childAddress) external view returns (bool)",
           "function getChildVerification(address childAddress) external view returns (tuple(address childAddress, address parentAddress, bool isVerified, uint256 verifiedAt))"
@@ -216,7 +216,7 @@ export function ManageFunds({ onBack }: ManageFundsProps) {
 
       try {
         const celoProvider = new ethers.JsonRpcProvider(CHAIN_CONFIG.celoSepolia.rpcUrl);
-        const VERIFIER_ADDRESS = CHAIN_CONFIG.celoSepolia.verifierAddress || "0x181A6c2359A39628415aB91bD99306c2927DfAb9";
+        const VERIFIER_ADDRESS = CHAIN_CONFIG.celoSepolia.verifierAddress || "0xa4Ca603a1BEb03F1C11bdeA90227855f67DFf796";
         const VERIFIER_ABI = ["function isChildVerified(address childAddress) external view returns (bool)"];
 
         const verifierContract = new ethers.Contract(VERIFIER_ADDRESS, VERIFIER_ABI, celoProvider);

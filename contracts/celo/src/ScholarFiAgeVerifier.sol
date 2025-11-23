@@ -120,6 +120,38 @@ contract ScholarFiAgeVerifier is SelfVerificationRoot {
     // ============ Self Verification Hook ============
 
     /**
+     * @notice Parse address from hex string bytes
+     * @param hexString Bytes containing hex address (40 chars, no 0x prefix)
+     * @return addr The parsed address
+     */
+    function _parseAddress(bytes memory hexString) private pure returns (address addr) {
+        require(hexString.length == 40, "Invalid address length");
+
+        uint160 result = 0;
+        for (uint i = 0; i < 40; i++) {
+            uint8 digit = uint8(hexString[i]);
+            uint8 value;
+
+            if (digit >= 48 && digit <= 57) {
+                // 0-9
+                value = digit - 48;
+            } else if (digit >= 65 && digit <= 70) {
+                // A-F
+                value = digit - 55;
+            } else if (digit >= 97 && digit <= 102) {
+                // a-f
+                value = digit - 87;
+            } else {
+                revert("Invalid hex character");
+            }
+
+            result = result * 16 + value;
+        }
+
+        return address(result);
+    }
+
+    /**
      * @notice Called automatically after successful Self age verification
      * @param output Verification output from Self Hub
      * @param userData User-defined data (child address encoded)
@@ -131,7 +163,9 @@ contract ScholarFiAgeVerifier is SelfVerificationRoot {
         ISelfVerificationRoot.GenericDiscloseOutputV2 memory output,
         bytes memory userData
     ) internal override {
-        address childAddress = abi.decode(userData, (address));
+        // Convert bytes back to address
+        // Self Protocol converts string → bytes, so we need to parse the hex string
+        address childAddress = _parseAddress(userData);
 
         ChildVerification storage child = children[childAddress];
         if (child.childAddress == address(0)) revert ChildNotRegistered();
