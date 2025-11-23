@@ -186,7 +186,7 @@ verify-celo:
 	@echo "$(GREEN)✓ Contract verified on Celoscan$(NC)"
 
 verify-oasis:
-	@echo "$(GREEN)Verifying Oasis contract on Oasis Explorer...$(NC)"
+	@echo "$(GREEN)Verifying Oasis contract with Sourcify...$(NC)"
 	@export $$(grep -v '^#' .env | grep -v '^$$' | xargs) && \
 	ADDRESS=$${CONTRACT_ADDRESS:-$$OASIS_DATASTORE_ADDRESS}; \
 	if [ -z "$$ADDRESS" ]; then \
@@ -195,17 +195,15 @@ verify-oasis:
 		exit 1; \
 	fi; \
 	echo "$(YELLOW)Contract: $$ADDRESS$(NC)"; \
-	echo "$(YELLOW)Note: Oasis Sapphire uses different verification process$(NC)"; \
-	echo "$(YELLOW)Visit: https://explorer.oasis.io/testnet/sapphire$(NC)"; \
-	echo "$(YELLOW)Manual verification may be required$(NC)"; \
+	echo "$(YELLOW)Verifying on Sourcify (Oasis Sapphire Testnet - Chain ID: 23295)$(NC)"; \
 	cd oasis && \
 		forge verify-contract \
+			--verifier sourcify \
+			--chain-id 23295 \
 			$$ADDRESS \
-			src/ChildDataStore.sol:ChildDataStore \
-			--verifier blockscout \
-			--verifier-url https://explorer.oasis.io/testnet/sapphire/api || \
-		echo "$(YELLOW)⚠️  Auto-verification not available for Oasis. Contract deployed successfully.$(NC)"
-	@echo "$(GREEN)✓ Oasis deployment confirmed at $$ADDRESS$(NC)"
+			src/ChildDataStore.sol:ChildDataStore
+	@echo "$(GREEN)✓ Oasis contract verified on Sourcify$(NC)"
+	@echo "$(YELLOW)View on Oasis Explorer: https://explorer.oasis.io/testnet/sapphire$(NC)"
 
 verify-all: verify-base verify-celo verify-oasis
 	@echo "$(GREEN)═══════════════════════════════════════════════════════$(NC)"
