@@ -7,8 +7,10 @@ node_modules/
 /contracts/*/node_modules/
 
 # Build outputs (DO NOT COMMIT)
+/frontend/build/
 /frontend/dist/
 /backend/dist/
+/backend/build/
 /contracts/*/out/
 /contracts/*/cache/
 /contracts/*/broadcast/
