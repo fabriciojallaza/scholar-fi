@@ -27,5 +27,10 @@ export class CreateChildAccountResponse {
   oasisProfileCreated: boolean;
   celoRegistered: boolean;
   baseRegistered: boolean;
+  contractAddresses?: {
+    celoVerifier: string;
+    baseSplitter: string;
+    oasisDatastore: string;
+  };
   message?: string;
 }
