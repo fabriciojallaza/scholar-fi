@@ -5,10 +5,10 @@ import { ValidationPipe } from '@nestjs/common';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS for frontend (allow both common Vite ports)
+  // Enable CORS for all origins (public API)
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://localhost:5173'],
-    credentials: true,
+    origin: '*',
+    credentials: false, // Set to false when using wildcard origin
   });
 
   // Enable validation pipes
