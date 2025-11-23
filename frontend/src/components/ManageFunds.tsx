@@ -16,6 +16,7 @@ import { Button } from "./ui/button";
 import { ethers } from "ethers";
 import { useSelfVerification } from "../hooks/useSelfVerification";
 import { SelfVerificationModal } from "./SelfVerificationModal";
+import { CHAIN_CONFIG } from "../config/contracts";
 
 interface ManageFundsProps {
   onBack: () => void;
@@ -42,6 +43,9 @@ export function ManageFunds({ onBack }: ManageFundsProps) {
   const [error, setError] = useState<string | null>(null);
 
   // Self Protocol verification hook
+  // Use childAddress if available, otherwise fall back to checkingWallet
+  const verificationAddress = childData?.childAddress || childData?.checkingWallet || "";
+
   const {
     isModalOpen,
     selfApp,
@@ -49,7 +53,7 @@ export function ManageFunds({ onBack }: ManageFundsProps) {
     closeModal,
     handleVerificationSuccess,
   } = useSelfVerification({
-    childAddress: childData?.childAddress || "",
+    childAddress: verificationAddress,
   });
 
   // Calculate if child is 18+
@@ -70,7 +74,17 @@ export function ManageFunds({ onBack }: ManageFundsProps) {
   useEffect(() => {
     const storedData = localStorage.getItem('childAccountData');
     if (storedData) {
-      setChildData(JSON.parse(storedData));
+      const data = JSON.parse(storedData);
+      console.log('Loaded child account data:', {
+        hasChildAddress: !!data.childAddress,
+        hasCheckingWallet: !!data.checkingWallet,
+        hasVaultWallet: !!data.vaultWallet,
+        childAddress: data.childAddress,
+        checkingWallet: data.checkingWallet
+      });
+      setChildData(data);
+    } else {
+      console.warn('No child account data found in localStorage');
     }
   }, []);
 
@@ -81,7 +95,7 @@ export function ManageFunds({ onBack }: ManageFundsProps) {
 
       setIsLoadingBalances(true);
       try {
-        const provider = new ethers.JsonRpcProvider("https://sepolia.base.org");
+        const provider = new ethers.JsonRpcProvider(CHAIN_CONFIG.baseSepolia.rpcUrl);
 
         // USDC contract on Base Sepolia
         const USDC_ADDRESS = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
@@ -121,9 +135,9 @@ export function ManageFunds({ onBack }: ManageFundsProps) {
       setIsCheckingVerification(true);
       try {
         // Connect to Celo Sepolia for direct on-chain verification
-        const celoProvider = new ethers.JsonRpcProvider("https://celo-sepolia-rpc.publicnode.com");
+        const celoProvider = new ethers.JsonRpcProvider(CHAIN_CONFIG.celoSepolia.rpcUrl);
 
-        const VERIFIER_ADDRESS = "0x181A6c2359A39628415aB91bD99306c2927DfAb9";
+        const VERIFIER_ADDRESS = CHAIN_CONFIG.celoSepolia.verifierAddress || "0x181A6c2359A39628415aB91bD99306c2927DfAb9";
         const VERIFIER_ABI = [
           "function isChildVerified(address childAddress) external view returns (bool)",
           "function getChildVerification(address childAddress) external view returns (tuple(address childAddress, address parentAddress, bool isVerified, uint256 verifiedAt))"
@@ -171,6 +185,12 @@ export function ManageFunds({ onBack }: ManageFundsProps) {
       setError("Vault is already unlocked");
       return;
     }
+    if (!verificationAddress || verificationAddress.trim() === '') {
+      setError("Child address not found. Please create a child account first.");
+      return;
+    }
+    // Clear any previous errors
+    setError(null);
     // Initialize Self Protocol verification
     initializeVerification();
   };
@@ -195,8 +215,8 @@ export function ManageFunds({ onBack }: ManageFundsProps) {
       setIsCheckingVerification(true);
 
       try {
-        const celoProvider = new ethers.JsonRpcProvider("https://celo-sepolia-rpc.publicnode.com");
-        const VERIFIER_ADDRESS = "0x181A6c2359A39628415aB91bD99306c2927DfAb9";
+        const celoProvider = new ethers.JsonRpcProvider(CHAIN_CONFIG.celoSepolia.rpcUrl);
+        const VERIFIER_ADDRESS = CHAIN_CONFIG.celoSepolia.verifierAddress || "0x181A6c2359A39628415aB91bD99306c2927DfAb9";
         const VERIFIER_ABI = ["function isChildVerified(address childAddress) external view returns (bool)"];
 
         const verifierContract = new ethers.Contract(VERIFIER_ADDRESS, VERIFIER_ABI, celoProvider);

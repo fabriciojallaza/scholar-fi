@@ -15,6 +15,7 @@ import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { ethers } from "ethers";
 import { Button } from "./ui/button";
 import { Screen } from "../App";
+import { CHAIN_CONFIG } from "../config/contracts";
 
 interface ParentDashboardProps {
   onNavigate: (screen: Screen) => void;
@@ -62,8 +63,8 @@ export function ParentDashboard({ onNavigate }: ParentDashboardProps) {
 
       setIsLoadingBalances(true);
       try {
-        // Use Base Sepolia RPC
-        const provider = new ethers.JsonRpcProvider("https://sepolia.base.org");
+        // Use Base Sepolia RPC from config
+        const provider = new ethers.JsonRpcProvider(CHAIN_CONFIG.baseSepolia.rpcUrl);
 
         // USDC contract on Base Sepolia
         const USDC_ADDRESS = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";

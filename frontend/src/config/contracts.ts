@@ -20,6 +20,7 @@ export const CHAIN_CONFIG = {
     name: "Celo Sepolia",
     rpcUrl: import.meta.env.VITE_CELO_SEPOLIA_RPC || "https://celo-sepolia-rpc.publicnode.com",
     explorer: "https://sepolia.celoscan.io",
+    verifierAddress: import.meta.env.VITE_CELO_VERIFIER_ADDRESS || "0x181A6c2359A39628415aB91bD99306c2927DfAb9",
     nativeCurrency: {
       name: "CELO",
       symbol: "CELO",
