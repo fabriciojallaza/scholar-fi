@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { ethers } from "ethers";
+import { useSelfVerification } from "../hooks/useSelfVerification";
+import { SelfVerificationModal } from "./SelfVerificationModal";
 
 interface ManageFundsProps {
   onBack: () => void;
@@ -38,6 +40,17 @@ export function ManageFunds({ onBack }: ManageFundsProps) {
 
   // Withdraw state
   const [error, setError] = useState<string | null>(null);
+
+  // Self Protocol verification hook
+  const {
+    isModalOpen,
+    selfApp,
+    initializeVerification,
+    closeModal,
+    handleVerificationSuccess,
+  } = useSelfVerification({
+    childAddress: childData?.childAddress || "",
+  });
 
   // Calculate if child is 18+
   const calculateAge = (dobTimestamp: number) => {
@@ -100,25 +113,32 @@ export function ManageFunds({ onBack }: ManageFundsProps) {
     return () => clearInterval(interval);
   }, [childData]);
 
-  // Check verification status on Celo
+  // Check verification status on Celo with adaptive polling
   useEffect(() => {
     const checkVerification = async () => {
       if (!childData?.childAddress) return;
 
       setIsCheckingVerification(true);
       try {
-        // Connect to Celo Sepolia
-        const celoProvider = new ethers.JsonRpcProvider("https://forno.celo-sepolia.celo-testnet.org");
+        // Connect to Celo Sepolia for direct on-chain verification
+        const celoProvider = new ethers.JsonRpcProvider("https://celo-sepolia-rpc.publicnode.com");
 
         const VERIFIER_ADDRESS = "0x181A6c2359A39628415aB91bD99306c2927DfAb9";
         const VERIFIER_ABI = [
-          "function isChildVerified(address childAddress) external view returns (bool)"
+          "function isChildVerified(address childAddress) external view returns (bool)",
+          "function getChildVerification(address childAddress) external view returns (tuple(address childAddress, address parentAddress, bool isVerified, uint256 verifiedAt))"
         ];
 
         const verifierContract = new ethers.Contract(VERIFIER_ADDRESS, VERIFIER_ABI, celoProvider);
         const verified = await verifierContract.isChildVerified(childData.childAddress);
 
         setIsVerified(verified);
+
+        // If just became verified, show success message
+        if (verified && !isVerified) {
+          setError(null);
+          console.log('✅ Vault unlocked! Age verification complete.');
+        }
       } catch (error) {
         console.error("Failed to check verification status:", error);
       } finally {
@@ -127,15 +147,79 @@ export function ManageFunds({ onBack }: ManageFundsProps) {
     };
 
     checkVerification();
-    // Refresh every 60 seconds
-    const interval = setInterval(checkVerification, 60000);
+
+    // Adaptive polling: check more frequently if modal was recently opened
+    // Normal: every 60 seconds, After verification attempt: every 10 seconds for 2 minutes
+    const pollInterval = isModalOpen ? 10000 : 60000;
+    const interval = setInterval(checkVerification, pollInterval);
+
     return () => clearInterval(interval);
-  }, [childData]);
+  }, [childData, isModalOpen, isVerified]);
 
   const handleCopyAddress = (address: string) => {
     navigator.clipboard.writeText(address);
     setCopiedWallet(address);
     setTimeout(() => setCopiedWallet(null), 2000);
+  };
+
+  const handleUnlockVault = () => {
+    if (!isChild18Plus) {
+      setError("Child must be 18 years or older to unlock vault");
+      return;
+    }
+    if (isVerified) {
+      setError("Vault is already unlocked");
+      return;
+    }
+    // Initialize Self Protocol verification
+    initializeVerification();
+  };
+
+  const onVerificationSuccess = async () => {
+    console.log('🎉 Self Protocol verification submitted successfully!');
+    console.log('📡 Checking on-chain verification status on Celo...');
+
+    await handleVerificationSuccess();
+
+    // Immediately start aggressive polling to catch the on-chain update
+    let attempts = 0;
+    const maxAttempts = 24; // 2 minutes of polling (every 5 seconds)
+
+    const pollVerification = async () => {
+      if (attempts >= maxAttempts) {
+        console.log('⏱️ Verification polling timeout. Status will continue to update in background.');
+        return;
+      }
+
+      attempts++;
+      setIsCheckingVerification(true);
+
+      try {
+        const celoProvider = new ethers.JsonRpcProvider("https://celo-sepolia-rpc.publicnode.com");
+        const VERIFIER_ADDRESS = "0x181A6c2359A39628415aB91bD99306c2927DfAb9";
+        const VERIFIER_ABI = ["function isChildVerified(address childAddress) external view returns (bool)"];
+
+        const verifierContract = new ethers.Contract(VERIFIER_ADDRESS, VERIFIER_ABI, celoProvider);
+        const verified = await verifierContract.isChildVerified(childData?.childAddress);
+
+        if (verified) {
+          setIsVerified(true);
+          setError(null);
+          console.log('✅ On-chain verification confirmed! Vault is now unlocked.');
+          setIsCheckingVerification(false);
+          return; // Stop polling
+        }
+
+        // Not verified yet, continue polling
+        setTimeout(pollVerification, 5000);
+      } catch (error) {
+        console.error('Error polling verification:', error);
+        setTimeout(pollVerification, 5000);
+      }
+    };
+
+    // Start polling after 3 seconds (give time for tx to be mined)
+    setTimeout(pollVerification, 3000);
   };
 
   return (
@@ -282,11 +366,37 @@ export function ManageFunds({ onBack }: ManageFundsProps) {
           </div>
 
           <Button
-            disabled
-            className="w-full bg-gray-300 text-gray-500 py-3 rounded-2xl flex items-center justify-center gap-2 cursor-not-allowed"
+            onClick={handleUnlockVault}
+            disabled={!isChild18Plus || isVerified || isCheckingVerification}
+            className={`w-full py-3 rounded-2xl flex items-center justify-center gap-2 transition-all ${
+              isVerified
+                ? "bg-green-100 text-green-700 cursor-default"
+                : !isChild18Plus
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                : "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg"
+            }`}
           >
-            <Lock className="w-4 h-4" />
-            <span>Unlock at Age 18</span>
+            {isCheckingVerification ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Checking...</span>
+              </>
+            ) : isVerified ? (
+              <>
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Vault Unlocked</span>
+              </>
+            ) : !isChild18Plus ? (
+              <>
+                <Lock className="w-4 h-4" />
+                <span>Unlock at Age 18</span>
+              </>
+            ) : (
+              <>
+                <Lock className="w-4 h-4" />
+                <span>Verify Age to Unlock</span>
+              </>
+            )}
           </Button>
         </div>
 
@@ -309,6 +419,14 @@ export function ManageFunds({ onBack }: ManageFundsProps) {
           </ul>
         </div>
       </div>
+
+      {/* Self Verification Modal */}
+      <SelfVerificationModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        selfApp={selfApp}
+        onSuccess={onVerificationSuccess}
+      />
     </div>
   );
 }
