@@ -89,6 +89,14 @@ export function ParentOnboarding({ onComplete }: ParentOnboardingProps) {
 
       console.log('✅ Child account created:', data);
 
+      // Store child account data in localStorage
+      localStorage.setItem('childAccountData', JSON.stringify({
+        childName,
+        childDateOfBirth: dobTimestamp,
+        parentEmail,
+        ...data
+      }));
+
       // Success! Move to dashboard
       onComplete();
     } catch (err: any) {

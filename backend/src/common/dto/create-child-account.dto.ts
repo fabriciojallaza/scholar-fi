@@ -20,11 +20,12 @@ export class CreateChildAccountResponse {
   childUserId: string;
   childPrivyEmail: string;
   checkingWallet: string;
+  checkingWalletId: string;
   vaultWallet: string;
+  vaultWalletId: string;
   parentWallet: string;
   oasisProfileCreated: boolean;
   celoRegistered: boolean;
   baseRegistered: boolean;
-  policiesCreated: boolean;
   message?: string;
 }

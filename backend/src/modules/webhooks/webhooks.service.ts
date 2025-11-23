@@ -125,6 +125,9 @@ export class WebhooksService {
       const processedEvents: any[] = [];
 
       for (const event of events) {
+        // Type guard: check if event is EventLog (has args)
+        if (!('args' in event)) continue;
+
         const childAddress = event.args?.childAddress;
         const parentAddress = event.args?.parentAddress;
         const timestamp = Number(event.args?.timestamp);
@@ -184,53 +187,24 @@ export class WebhooksService {
   }
 
   /**
-   * Update vault wallet policy after child is verified
-   * Adds child as signer and removes time locks
+   * Handle vault unlock after child is verified
+   * Note: Child already has access as additional_signer, so no policy update needed
+   * Just log the verification event
    */
   private async updateVaultPolicyAfterVerification(
     vaultWallet: string,
     childPrivyUserId: string,
   ) {
     try {
-      this.logger.log(`Updating vault policy for ${vaultWallet}`);
+      this.logger.log(`Child ${childPrivyUserId} verified - vault ${vaultWallet} accessible`);
+      this.logger.log(`Note: Child already has signing access via additional_signer`);
 
-      // Get existing policies for this wallet
-      // Note: Privy API endpoint to list policies
-      const response = await fetch(
-        `https://auth.privy.io/api/v1/wallets/${vaultWallet}/policies`,
-        {
-          headers: {
-            'Authorization': this.getAuthHeader(),
-            'privy-app-id': this.configService.get<string>('PRIVY_APP_ID')!,
-          },
-        }
-      );
+      // TODO: Send notification email to child that they can now access vault
+      // TODO: Update on-chain verification status if needed
 
-      if (!response.ok) {
-        throw new Error(`Failed to get policies: ${response.status}`);
-      }
-
-      const policies = await response.json();
-      const vaultPolicy = policies[0]; // Assume first policy is vault policy
-
-      if (!vaultPolicy) {
-        this.logger.warn('No vault policy found - child will need manual access');
-        return;
-      }
-
-      // Update policy to add child as signer and remove locks
-      await this.privyService.updateWalletPolicy(
-        vaultWallet,
-        vaultPolicy.id,
-        {
-          signers: [...vaultPolicy.signers, childPrivyUserId], // Add child
-          timeLocks: null, // Remove time lock
-        },
-      );
-
-      this.logger.log(`✅ Updated vault policy - child ${childPrivyUserId} can now access funds`);
+      this.logger.log(`✅ Vault accessible for child ${childPrivyUserId}`);
     } catch (error) {
-      this.logger.error(`Failed to update vault policy: ${error.message}`);
+      this.logger.error(`Failed to process vault unlock: ${error.message}`);
       throw error;
     }
   }

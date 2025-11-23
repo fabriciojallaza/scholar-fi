@@ -1,4 +1,4 @@
-import { Home, HelpCircle, PlusCircle } from "lucide-react";
+import { Home, HelpCircle, Wallet } from "lucide-react";
 
 interface BottomNavProps {
   currentScreen: string;
@@ -9,7 +9,7 @@ export function BottomNav({ currentScreen, onNavigate }: BottomNavProps) {
   const navItems = [
     { id: "dashboard", label: "Home", icon: Home },
     { id: "faq", label: "FAQ", icon: HelpCircle },
-    { id: "addFunds", label: "Add Funds", icon: PlusCircle },
+    { id: "addFunds", label: "Manage", icon: Wallet },
   ];
 
   return (

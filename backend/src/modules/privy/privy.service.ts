@@ -28,18 +28,36 @@ export class PrivyService {
 
   /**
    * Create a new Privy user (for child account)
+   * Uses REST API: POST https://api.privy.io/v1/users
    */
   async createUser(email: string, metadata?: Record<string, any>) {
     try {
       this.logger.log(`Creating Privy user with email: ${email}`);
 
-      // Note: Privy's actual API for user creation
-      // This creates a user entity but NO wallet yet
-      // Wallet is created on first login via frontend
-      const user = await this.privyClient.createUser({
-        // Privy will auto-generate user ID
+      const response = await fetch('https://api.privy.io/v1/users', {
+        method: 'POST',
+        headers: {
+          'Authorization': this.getAuthHeader(),
+          'Content-Type': 'application/json',
+          'privy-app-id': this.configService.get<string>('PRIVY_APP_ID')!,
+        },
+        body: JSON.stringify({
+          linked_accounts: [
+            {
+              type: 'email',
+              address: email,
+            }
+          ],
+          custom_metadata: metadata || {},
+        }),
       });
 
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`Privy API error: ${response.status} - ${error}`);
+      }
+
+      const user = await response.json();
       this.logger.log(`✅ Created Privy user: ${user.id}`);
       return user;
     } catch (error) {
@@ -69,7 +87,7 @@ export class PrivyService {
         (account: any) =>
           account.type === 'wallet' &&
           (account.walletClientType === 'privy' || account.connectorType === 'embedded')
-      );
+      ) as any;
 
       if (embeddedWallet) {
         this.logger.log(`Found embedded wallet: ${embeddedWallet.address}`);
@@ -98,103 +116,152 @@ export class PrivyService {
   }
 
   /**
-   * Create wallet policy for multi-signer setup
-   * Uses Privy Policies API: https://docs.privy.io/api-reference/policies/create
+   * Extract CUID2 from Privy DID format
+   * Example: did:privy:cmib02phj00v8lh0c06dbkk9i -> cmib02phj00v8lh0c06dbkk9i
    */
-  async createWalletPolicy(
-    walletAddress: string,
-    signers: string[],
-    policyConfig: {
-      spendingLimits?: {
-        amount: string;
-        period: 'daily' | 'weekly' | 'monthly';
-      };
-      timeLocks?: {
-        unlockDate: number;
-      };
+  private extractCuid2(privyId: string): string {
+    if (privyId.startsWith('did:privy:')) {
+      return privyId.replace('did:privy:', '');
     }
+    return privyId;
+  }
+
+  /**
+   * Create a key quorum (multi-signer entity)
+   * Uses Privy Key Quorums API: POST https://api.privy.io/v1/key_quorums
+   *
+   * @param userIds - Array of Privy user IDs (full DID format)
+   * @param threshold - Minimum signatures required (default: 1 = any can sign)
+   * @param displayName - Optional name for the quorum
+   */
+  async createKeyQuorum(
+    userIds: string[],
+    threshold: number = 1,
+    displayName?: string
   ) {
     try {
-      this.logger.log(`Creating wallet policy for ${walletAddress}`);
+      this.logger.log(`Creating key quorum with users: ${userIds.join(', ')}, threshold: ${threshold}`);
 
-      // Using Privy Policies API
-      // POST https://auth.privy.io/api/v1/wallets/{address}/policies
-      const response = await fetch(
-        `https://auth.privy.io/api/v1/wallets/${walletAddress}/policies`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': this.getAuthHeader(),
-            'Content-Type': 'application/json',
-            'privy-app-id': this.configService.get<string>('PRIVY_APP_ID')!,
-          },
-          body: JSON.stringify({
-            signers,  // Array of Privy user IDs that can sign
-            ...policyConfig,
-          }),
-        }
-      );
+      const response = await fetch('https://api.privy.io/v1/key_quorums', {
+        method: 'POST',
+        headers: {
+          'Authorization': this.getAuthHeader(),
+          'Content-Type': 'application/json',
+          'privy-app-id': this.configService.get<string>('PRIVY_APP_ID')!,
+        },
+        body: JSON.stringify({
+          user_ids: userIds,
+          authorization_threshold: threshold,
+          display_name: displayName,
+        }),
+      });
 
       if (!response.ok) {
         const error = await response.text();
         throw new Error(`Privy API error: ${response.status} - ${error}`);
       }
 
-      const policy = await response.json();
-      this.logger.log(`✅ Created wallet policy: ${policy.id}`);
-      return policy;
+      const quorum = await response.json();
+      this.logger.log(`✅ Created key quorum: ${quorum.id}`);
+      return quorum;
     } catch (error) {
-      this.logger.error(`Failed to create wallet policy: ${error.message}`);
+      this.logger.error(`Failed to create key quorum: ${error.message}`);
       throw error;
     }
   }
 
   /**
-   * Update wallet policy (e.g., transfer ownership after age verification)
+   * Create wallet with owner
+   * Uses Privy Wallets API: POST https://api.privy.io/v1/wallets
+   *
+   * IMPORTANT: Per Privy docs:
+   * - If ownerId starts with "did:privy:", use owner.user_id (single user)
+   * - Otherwise, use owner_id (key quorum ID)
+   *
+   * @param ownerId - Owner's Privy user ID (did:privy:xxx) OR key quorum ID
+   * @param additionalSignerIds - Array of key quorum IDs to add as signers
+   * @param chainType - Blockchain type (default: ethereum)
    */
-  async updateWalletPolicy(
-    walletAddress: string,
-    policyId: string,
-    updates: {
-      signers?: string[];
-      spendingLimits?: null | {
-        amount: string;
-        period: 'daily' | 'weekly' | 'monthly';
-      };
-      timeLocks?: null | {
-        unlockDate: number;
-      };
-    }
+  async createWallet(
+    ownerId: string,
+    additionalSignerIds: string[] = [],
+    chainType: string = 'ethereum'
   ) {
     try {
-      this.logger.log(`Updating wallet policy ${policyId} for ${walletAddress}`);
+      this.logger.log(`Creating wallet for owner: ${ownerId} with additional signers: ${additionalSignerIds.join(', ')}`);
 
-      const response = await fetch(
-        `https://auth.privy.io/api/v1/wallets/${walletAddress}/policies/${policyId}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Authorization': this.getAuthHeader(),
-            'Content-Type': 'application/json',
-            'privy-app-id': this.configService.get<string>('PRIVY_APP_ID')!,
-          },
-          body: JSON.stringify(updates),
-        }
-      );
+      const requestBody: any = {
+        chain_type: chainType,
+      };
+
+      // Check if owner is a user DID or key quorum ID
+      if (ownerId.startsWith('did:privy:')) {
+        // Single user owner
+        requestBody.owner = {
+          user_id: ownerId,
+        };
+      } else {
+        // Key quorum owner
+        requestBody.owner_id = ownerId;
+      }
+
+      // Only add additional_signers if we have any
+      if (additionalSignerIds.length > 0) {
+        requestBody.additional_signers = additionalSignerIds.map(signerId => ({
+          signer_id: signerId,
+        }));
+      }
+
+      const response = await fetch('https://api.privy.io/v1/wallets', {
+        method: 'POST',
+        headers: {
+          'Authorization': this.getAuthHeader(),
+          'Content-Type': 'application/json',
+          'privy-app-id': this.configService.get<string>('PRIVY_APP_ID')!,
+        },
+        body: JSON.stringify(requestBody),
+      });
 
       if (!response.ok) {
         const error = await response.text();
         throw new Error(`Privy API error: ${response.status} - ${error}`);
       }
 
-      const policy = await response.json();
-      this.logger.log(`✅ Updated wallet policy: ${policy.id}`);
-      return policy;
+      const wallet = await response.json();
+      this.logger.log(`✅ Created wallet: ${wallet.address} (ID: ${wallet.id})`);
+      return wallet;
     } catch (error) {
-      this.logger.error(`Failed to update wallet policy: ${error.message}`);
+      this.logger.error(`Failed to create wallet: ${error.message}`);
       throw error;
     }
   }
+
+  /**
+   * Get all wallets for a user
+   * Uses SDK method
+   */
+  async getUserWallets(userId: string) {
+    try {
+      this.logger.log(`Getting all wallets for user: ${userId}`);
+      const user = await this.privyClient.getUser(userId);
+
+      if (!user.linkedAccounts || !Array.isArray(user.linkedAccounts)) {
+        this.logger.warn(`User ${userId} has no linked accounts`);
+        return [];
+      }
+
+      const wallets = user.linkedAccounts.filter(
+        (account: any) => account.type === 'wallet'
+      );
+
+      this.logger.log(`Found ${wallets.length} wallets for user ${userId}`);
+      return wallets;
+    } catch (error) {
+      this.logger.error(`Failed to get user wallets: ${error.message}`);
+      return [];
+    }
+  }
+
 
   /**
    * Verify gas sponsorship is enabled for a chain
@@ -214,7 +281,7 @@ export class PrivyService {
           method: 'GET',
           headers: {
             'Authorization': this.getAuthHeader(),
-            'privy-app-id': appId,
+            'privy-app-id': appId!,
           },
         }
       );

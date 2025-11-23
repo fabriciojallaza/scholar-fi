@@ -50,7 +50,7 @@ export class ChildAccountService {
       });
 
       const childUserId = childUser.id;
-      this.logger.log(`Child Privy user created: ${childUserId}`);
+      this.logger.log(`✅ Child Privy user created: ${childUserId}`);
 
       // STEP 4: Generate deterministic child address (used as identifier in contracts)
       const childAddress = ethers.keccak256(
@@ -59,46 +59,33 @@ export class ChildAccountService {
 
       this.logger.log(`Child address (identifier): ${childAddress}`);
 
-      // STEP 5: Create checking and vault wallets (EOA wallets)
-      // These are server-controlled for now, with Privy policies for signers
-      const checkingWallet = ethers.Wallet.createRandom();
-      const vaultWallet = ethers.Wallet.createRandom();
+      // STEP 5: Create key quorum (parent + child = either can sign)
+      this.logger.log(`Creating key quorum with parent and child...`);
+      const keyQuorum = await this.privyService.createKeyQuorum(
+        [dto.parentUserId, childUserId],
+        1,  // Threshold = 1 means either parent OR child can sign
+        `${dto.childName}_quorum`
+      );
 
-      this.logger.log(`Checking wallet: ${checkingWallet.address}`);
-      this.logger.log(`Vault wallet: ${vaultWallet.address}`);
+      this.logger.log(`✅ Key quorum created: ${keyQuorum.id}`);
 
-      // STEP 6: Create Privy policies for multi-signer wallets
-      // This allows both parent and child to sign transactions
-      let policiesCreated = false;
-      try {
-        // Policy for checking wallet (70% - immediate spending)
-        // Both parent and child can sign
-        await this.privyService.createWalletPolicy(
-          checkingWallet.address,
-          [dto.parentUserId, childUserId],
-          {
-            // No spending limits on checking account
-          }
-        );
+      // STEP 6: Create checking and vault wallets using key quorum
+      this.logger.log(`Creating checking wallet with key quorum as owner...`);
+      const checkingWallet = await this.privyService.createWallet(
+        keyQuorum.id,  // Key quorum as owner
+        [],  // No additional signers needed
+        'ethereum'
+      );
 
-        // Policy for vault wallet (30% - locked until age 18)
-        // Initially only parent can sign, child added after verification
-        await this.privyService.createWalletPolicy(
-          vaultWallet.address,
-          [dto.parentUserId],  // Only parent initially
-          {
-            timeLocks: {
-              unlockDate: dto.childDateOfBirth + (18 * 365 * 24 * 60 * 60), // 18 years from birth
-            },
-          }
-        );
+      this.logger.log(`Creating vault wallet with key quorum as owner...`);
+      const vaultWallet = await this.privyService.createWallet(
+        keyQuorum.id,  // Key quorum as owner
+        [],  // No additional signers needed
+        'ethereum'
+      );
 
-        policiesCreated = true;
-        this.logger.log('✅ Privy wallet policies created');
-      } catch (error) {
-        this.logger.error(`Failed to create Privy policies: ${error.message}`);
-        this.logger.warn('Continuing without policies - wallets will be server-controlled only');
-      }
+      this.logger.log(`✅ Checking wallet: ${checkingWallet.address} (ID: ${checkingWallet.id})`);
+      this.logger.log(`✅ Vault wallet: ${vaultWallet.address} (ID: ${vaultWallet.id})`);
 
       // STEP 7: Register on Base Sepolia
       const baseRegistered = await this.blockchainService.registerOnBase(
@@ -113,7 +100,7 @@ export class ChildAccountService {
         parentWallet,
       );
 
-      // STEP 9: Create encrypted profile on Oasis with Privy IDs
+      // STEP 9: Create encrypted profile on Oasis with Privy IDs and wallet info
       const oasisProfileCreated = await this.blockchainService.createOasisProfile({
         childAddress,
         childName: dto.childName,
@@ -126,13 +113,6 @@ export class ChildAccountService {
         parentPrivyUserId: dto.parentUserId,
       });
 
-      // STEP 10: Securely store wallet private keys
-      // TODO: Implement secure storage (AWS KMS, Vault, etc.)
-      await this.storeWalletKeysSecurely(childAddress, {
-        checkingPrivateKey: checkingWallet.privateKey,
-        vaultPrivateKey: vaultWallet.privateKey,
-      });
-
       this.logger.log(`✅ Child account created successfully: ${childAddress}`);
 
       return {
@@ -141,43 +121,18 @@ export class ChildAccountService {
         childUserId,
         childPrivyEmail: childEmail,
         checkingWallet: checkingWallet.address,
+        checkingWalletId: checkingWallet.id,
         vaultWallet: vaultWallet.address,
+        vaultWalletId: vaultWallet.id,
         parentWallet,
         oasisProfileCreated,
         celoRegistered,
         baseRegistered,
-        policiesCreated,
-        message: policiesCreated
-          ? 'Child account created with multi-signer policies'
-          : 'Child account created (policies failed - using server-controlled wallets)',
+        message: 'Child account created with checking and vault wallets (child as additional signer)',
       };
     } catch (error) {
       this.logger.error(`Failed to create child account: ${error.message}`);
       throw error;
     }
-  }
-
-  /**
-   * Securely store wallet private keys
-   * CRITICAL: Implement proper encryption and secure storage
-   */
-  private async storeWalletKeysSecurely(
-    childAddress: string,
-    keys: { checkingPrivateKey: string; vaultPrivateKey: string },
-  ): Promise<void> {
-    // TODO: Implement secure storage
-    // Options:
-    // 1. Encrypt with parent's Privy embedded wallet public key
-    // 2. Store in AWS Secrets Manager / HashiCorp Vault
-    // 3. Split key with Shamir Secret Sharing
-    // 4. Store encrypted in Oasis Sapphire contract
-
-    this.logger.warn('⚠️  Private keys need secure storage implementation!');
-    this.logger.warn(`   Child address: ${childAddress}`);
-    this.logger.warn(`   Checking wallet key: ${keys.checkingPrivateKey.substring(0, 10)}...`);
-    this.logger.warn(`   Vault wallet key: ${keys.vaultPrivateKey.substring(0, 10)}...`);
-
-    // For MVP: Log to secure location
-    // In production: NEVER log private keys!
   }
 }

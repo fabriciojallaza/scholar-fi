@@ -59,7 +59,11 @@ export class BlockchainService {
       this.logger.log(`Registering child on Celo: ${childAddress}`);
 
       const provider = new ethers.JsonRpcProvider(
-        this.configService.get<string>('CELO_SEPOLIA_RPC')
+        this.configService.get<string>('CELO_SEPOLIA_RPC'),
+        {
+          chainId: 11142220,
+          name: 'celo-sepolia',
+        }
       );
       const signer = new ethers.Wallet(
         this.configService.get<string>('PRIVATE_KEY')!,
@@ -102,7 +106,11 @@ export class BlockchainService {
       this.logger.log(`Creating Oasis profile for: ${params.childAddress}`);
 
       const provider = new ethers.JsonRpcProvider(
-        this.configService.get<string>('OASIS_SAPPHIRE_RPC')
+        this.configService.get<string>('OASIS_SAPPHIRE_RPC'),
+        {
+          chainId: 23295,
+          name: 'oasis-sapphire-testnet',
+        }
       );
       const signer = new ethers.Wallet(
         this.configService.get<string>('PRIVATE_KEY')!,
