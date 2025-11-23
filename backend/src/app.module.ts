@@ -4,6 +4,7 @@ import { ChildAccountModule } from './modules/child-account/child-account.module
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { PrivyModule } from './modules/privy/privy.module';
 import { BlockchainModule } from './modules/blockchain/blockchain.module';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -16,5 +17,6 @@ import { BlockchainModule } from './modules/blockchain/blockchain.module';
     ChildAccountModule,
     WebhooksModule,
   ],
+  controllers: [AppController],
 })
 export class AppModule {}
